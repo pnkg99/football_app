@@ -40,14 +40,6 @@ def extract_match_id_from_path(file_path):
 if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
     
-    # parser.add_argument("history", help="Insert history for Leagues, Teams and Duels")
-    # parser.add_argument("--ctg", action="store_true", help="Insert categories and subcategories for Leagues, Clubs, Matches")
-    # parser.add_argument("--stat", action="store_true", help="Insert statistic for Leagues, Clubs, Matches")
-    # parser.add_argument("--tbl", action="store_true", help="Insert tables for Leagues")
-    # parser.add_argument("--mtch", action="store_true", help="Insert Matches for Leagues")
-    
-    
-    # args = parser.parse_args()
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
 
     # Subparser for the "history" subcommand
@@ -68,10 +60,10 @@ if __name__ == "__main__" :
     
     # XLSX League Files path
     path = os.getcwd()
-    liga_files = take_xlsx_files_path(path + "\Liga")
+    liga_files = take_xlsx_files_path(os.path.join(path, "Liga"))
     ekipe_home_files = take_xlsx_files_path(os.path.join(path,"Ekipe", "HOME"))
     ekipe_away_files = take_xlsx_files_path(os.path.join(path,"Ekipe", "AWAY"))
-    dueli_files = take_xlsx_files_path(path + "\Dueli")
+    dueli_files = take_xlsx_files_path(os.path.join(path, "Dueli"))
     
     league_id = 1
     
@@ -82,20 +74,20 @@ if __name__ == "__main__" :
             app.insert_cateogires(f)
             app.insert_subcategories(f)
         if args.stat :
-            ## Insert Stat History for Leagues, Clubs and Matches
-            # for file in liga_files :
-            #     league_id = extract_league_id_from_path(file)
-            #     app.insert_league_stats_history(file, league_id)
-            ## Insert Clubs home and away history stats  
-            # for file in ekipe_home_files :
-            #     club_name = extract_club_name_from_path(file)
-            #     club_id = app.get_club_id(club_name)
-            #     app.insert_clubs_stats_history(club_id,home=True, path=file)
-            # for file in ekipe_away_files :
-            #     club_name = extract_club_name_from_path(file)
-            #     club_id = app.get_club_id(club_name)
-            #     app.insert_clubs_stats_history(club_id,home=False, path=file)            
-            # Inset Matches history stats
+            # Insert Stat History for Leagues, Clubs and Matches
+            for file in liga_files :
+                league_id = extract_league_id_from_path(file)
+                app.insert_league_stats_history(file, league_id)
+            # Insert Clubs home and away history stats  
+            for file in ekipe_home_files :
+                club_name = extract_club_name_from_path(file)
+                club_id = app.get_club_id(club_name)
+                app.insert_clubs_stats_history(club_id,home=True, path=file)
+            for file in ekipe_away_files :
+                club_name = extract_club_name_from_path(file)
+                club_id = app.get_club_id(club_name)
+                app.insert_clubs_stats_history(club_id,home=False, path=file)            
+            #Inset Matches history stats
             for file in dueli_files :
                 match_id = extract_match_id_from_path(file)
                 app.insert_matches_stats_history(match_id, file)
@@ -105,6 +97,7 @@ if __name__ == "__main__" :
             app.insert_league_corners(f, league_id)
             app.insert_league_cards_table(f, league_id)
             app.insert_league_half_table(f, league_id)
+
         if args.mtch :
             app.insert_matches(f, league_id)
         

@@ -334,7 +334,7 @@ class scraper(mysqldb) :
                             datasets+=1
                         except Exception as e :
                             print("Set query rasied exception : ", e)
-                            exit()   
+                            break   
                     else :
                         pass 
                 lower_bound+=6
@@ -350,35 +350,49 @@ class scraper(mysqldb) :
     def insert_league_goals(self,file,league_id) :
         lb = 1
         ub = 14
-        max_upper = df = self.read_xlsx_file_sheet(file, "T-G").shape[1]
-        while max_upper >= ub :      
+        while True : 
             try :
                 df = self.read_xlsx_file_sheet(file, "T-G", lb=lb, ub=ub, nrows=72)
-                first_cell = df.iloc[0,0]
-                season_id = self.get_season_id(first_cell.split(' ')[1])        
-                if season_id == None :
+            except Exception as e :
+                print(e)
+                break;
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == active_season_id :
+                break
+            if season_id == None :
+                break
+            datasets=0
+            for row_index,row in df.iterrows():
+                #print(row)
+                if 25 > row_index > 3 :
+                    table = LEAGUE_GOALS_TABLE
+                elif 48 > row_index > 27 :
+                    table = LEAGUE_GOALS_HOME_TABLE
+                elif 71 > row_index > 50 :
+                    table = LEAGUE_GOALS_AWAY_TABLE
+                else :
                     continue
-                for row_index,row in df.iterrows():
-                    if 24 > row_index > 5 :
-                        table = LEAGUE_GOALS_TABLE
-                    elif 48 > row_index > 27 :
-                        table = LEAGUE_GOALS_HOME_TABLE
-                    elif 71 > row_index > 50 :
-                        table = LEAGUE_GOALS_AWAY_TABLE
-                    else :
-                        continue
-                    rank = row[0]
-                    club_name = row[1]
-                    club_id = self.get_club_id(club_name)
-                    values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
-                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
-                    if row[7] == "0" :
-                        continue
+                rank = row[0]
+                club_name = row[1]
+                club_id = self.get_club_id(club_name)
+                values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
+                q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                if row[7] == "0" :
+                    break
+                try :
                     self.set_query(q)
-            except :
-                pass               
-            ub+=14
-            lb+=14
+                    print(q)
+                except Exception as e :
+                       print(e)
+                       pass
+                ub+=14
+                lb+=14
                          
 
     ### T-C ### Table - Corners
@@ -386,11 +400,23 @@ class scraper(mysqldb) :
     def insert_league_corners(self,file, league_id) :
         lb = 1
         ub = 12
-        max_upper = df = self.read_xlsx_file_sheet(file, "T-C").shape[1]
-        while max_upper >= ub :      
-            df = self.read_xlsx_file_sheet(file, "T-C", lb=lb, ub=ub,nrows=73)
-            first_cell = df.iloc[0,0]
-            season_id = self.get_season_id(first_cell.split(' ')[1])            
+        while True :
+            try :     
+                df = self.read_xlsx_file_sheet(file, "T-C", lb=lb, ub=ub,nrows=73)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == active_season_id :
+                break
+            if season_id == None :
+                break                                       
             for row_index,row in df.iterrows():
                 if 25 > row_index > 4 :
                     table = LEAGUE_CORNERS_TABLE
@@ -400,7 +426,6 @@ class scraper(mysqldb) :
                     table = LEAGUE_CORNERS_AWAY_TABLE
                 else :
                     continue
-                
                 if row[6] == '0' :
                     continue
                 try :
@@ -411,9 +436,9 @@ class scraper(mysqldb) :
                     q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
                     print(q)
                     self.set_query(q)
-                except :
-                    pass
-                
+                except Exception as e:
+                    print(e)
+                    break
             ub+=12
             lb+=12
     
@@ -422,13 +447,23 @@ class scraper(mysqldb) :
     def insert_league_cards_table(self,file, league_id) :
         lb = 1
         ub = 12
-        max_upper = df = self.read_xlsx_file_sheet(file, "T Card").shape[1]
-        while max_upper >= ub :      
-            df = self.read_xlsx_file_sheet(file, "T Card", lb=lb, ub=ub,nrows=75)
-            first_cell = df.iloc[0,0]
-            season_id = self.get_season_id(first_cell.split(' ')[1])       
+        while True :
+            try:   
+                df = self.read_xlsx_file_sheet(file, "T Card", lb=lb, ub=ub,nrows=75)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == active_season_id :
+                break
             if season_id == None :
-                continue     
+                break   
             for row_index,row in df.iterrows():
                 if 25 > row_index >= 5 :
                     table =  LEAGUE_CARDS_TABLE
@@ -438,13 +473,17 @@ class scraper(mysqldb) :
                     table = LEAGUE_CARDS_AWAY_TABLE
                 else :
                     continue
-                rank = row[0]
-                club_name = row[1]
-                club_id = self.get_club_id(club_name)
-                values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
-                q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
-                print(q)
-                self.set_query(q)                
+                try:
+                    rank = row[0]
+                    club_name = row[1]
+                    club_id = self.get_club_id(club_name)
+                    values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
+                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
+                    print(q)
+                    self.set_query(q)
+                except Exception as e :
+                    print(e)
+                    break        
             ub+=12
             lb+=12
 
@@ -453,18 +492,27 @@ class scraper(mysqldb) :
     def insert_league_half_table(self,file, league_id) :
         lb = 1
         ub = 13
-        max_upper = df = self.read_xlsx_file_sheet(file, "T-Half").shape[1]
-        while ub <= max_upper :      
-            df = self.read_xlsx_file_sheet(file, "T-Half", lb=lb, ub=ub, nrows=150)
-            first_cell = df.iloc[0,0]
-            season_id = self.get_season_id(first_cell.split(' ')[1])         
+        while True : 
+            try :     
+                df = self.read_xlsx_file_sheet(file, "T-Half", lb=lb, ub=ub, nrows=150)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == active_season_id :
+                break
+            if season_id == None :
+                break        
             for row_index,row in df.iterrows():
                 if row_index < 5 :
                     continue
-                rank = row[0]
-                club_name = row[1]
-                club_id = self.get_club_id(club_name)
-                values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", NOW(), NOW()'
+
                 if 25 >= row_index :
                     table = LEAGUES_GOALS_FIRST_HALF_TABLES
                 elif 49 >= row_index >= 30 :
@@ -477,10 +525,17 @@ class scraper(mysqldb) :
                     table = LEAGUES_GOALS_AWAY_FIRST_HALF_TABLES
                 elif 145 >= row_index >= 125 :
                     table = LEAGUES_GOALS_AWAY_SECOND_HALF_TABLES
-                    
-                q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
-                print(q)
-                self.set_query(q)          
+                try :
+                    rank = row[0]
+                    club_name = row[1]
+                    club_id = self.get_club_id(club_name)
+                    values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", NOW(), NOW()'
+                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                    print(q)
+                    self.set_query(q)
+                except Exception as e :
+                    print(e)
+                    break        
             ub+=13
             lb+=13
             
