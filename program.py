@@ -1,5 +1,5 @@
 from scraper import *
-import argparse, re
+import argparse, re, os
 
 def take_xlsx_files_path(path) :
     xlsx_files_path=[]
@@ -77,6 +77,7 @@ if __name__ == "__main__" :
             # Insert Stat History for Leagues, Clubs and Matches
             for file in liga_files :
                 league_id = extract_league_id_from_path(file)
+                filename = os.path.basename(path)
                 app.insert_league_stats_history(file, league_id)
             # Insert Clubs home and away history stats  
             for file in ekipe_home_files :

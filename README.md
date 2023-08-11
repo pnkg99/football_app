@@ -2,13 +2,31 @@
 
 ## Python Dependencies
 
-python version : python 2.7 (python)
+python version : python >=3.1 
 
-`pandas, googletrans`
+dependencies install command : 
 
-install command : 
+- `pip3 install pandas googletrans mysql-connector-python openpy`
 
-- `pip install pandas googletrans`
+## Ububtu Venv setupo script 
+
+```sh
+#!/bin/bash
+
+# Name of the virtual environment
+venv_name="footballpy"
+
+# Create virtual environment
+python3 -m venv $venv_name
+
+# Activate the virtual environment
+source $venv_name/bin/activate
+
+# Install packages
+pip install pandas googletrans #
+
+echo "Virtual environmentcreated and packages installed! mysql-connector-python openpy"
+```
 
 ## XLSX files 
 

@@ -1,6 +1,5 @@
-import os, io, pandas as pd, mysql.connector 
+import io, pandas as pd, mysql.connector 
 from googletrans import Translator
-import time
 
 # 2019-2027
 SEASON_TABLE = "seasons"
