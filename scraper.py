@@ -350,10 +350,11 @@ class scraper(mysqldb) :
         lb = 1
         ub = 14
         while True : 
+            print(ub, lb)
             try :
                 df = self.read_xlsx_file_sheet(file, "T-G", lb=lb, ub=ub, nrows=72)
             except Exception as e :
-                print(e)
+                print("df ", e)
                 break;
             try :
                 season = df.iloc[0,0].split(' ')[1]
@@ -368,16 +369,18 @@ class scraper(mysqldb) :
                 break
             datasets=0
             for row_index,row in df.iterrows():
-                #print(row)
-                if 25 > row_index > 3 :
+                if 24 > row_index > 3 :
                     table = LEAGUE_GOALS_TABLE
-                elif 48 > row_index > 27 :
+                elif 47 > row_index > 26 :
                     table = LEAGUE_GOALS_HOME_TABLE
-                elif 71 > row_index > 50 :
+                elif 70 > row_index > 49 :
                     table = LEAGUE_GOALS_AWAY_TABLE
                 else :
                     continue
                 rank = row[0]
+                if not rank :
+                    print(row_index)
+                    exit()
                 club_name = row[1]
                 club_id = self.get_club_id(club_name)
                 values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
@@ -388,10 +391,10 @@ class scraper(mysqldb) :
                     self.set_query(q)
                     print(q)
                 except Exception as e :
-                       print(e)
+                       print("Query exception", e)
                        pass
-                ub+=14
-                lb+=14
+            ub+=14
+            lb+=14
                          
 
     ### T-C ### Table - Corners
@@ -507,23 +510,23 @@ class scraper(mysqldb) :
             if season_id == active_season_id :
                 break
             if season_id == None :
-                break        
+                break  
+            print(ub, lb)      
             for row_index,row in df.iterrows():
-                if row_index < 5 :
-                    continue
-
-                if 25 >= row_index :
+                if 25 > row_index > 4 :
                     table = LEAGUES_GOALS_FIRST_HALF_TABLES
-                elif 49 >= row_index >= 30 :
+                elif 49 > row_index > 28 :
                     table = LEAGUES_GOALS_SECOND_HALF_TABLES
-                elif 73 >= row_index >=54 :
+                elif 73 > row_index > 52 :
                     table = LEAGUES_GOALS_HOME_FIRST_HALF_TABLES
-                elif 97 >= row_index >= 78 :
+                elif 97 > row_index > 76 :
                     table = LEAGUES_GOALS_HOME_SECOND_HALF_TABLES
-                elif 121 >= row_index >= 101 :
+                elif 121 > row_index > 100 :
                     table = LEAGUES_GOALS_AWAY_FIRST_HALF_TABLES
-                elif 145 >= row_index >= 125 :
+                elif 145 > row_index > 124 :
                     table = LEAGUES_GOALS_AWAY_SECOND_HALF_TABLES
+                else :
+                    continue
                 try :
                     rank = row[0]
                     club_name = row[1]
@@ -534,7 +537,8 @@ class scraper(mysqldb) :
                     self.set_query(q)
                 except Exception as e :
                     print(e)
-                    break        
+                    print("Row index : ",row_index)
+                    break
             ub+=13
             lb+=13
             
