@@ -67,8 +67,11 @@ drop then insert every colum with current (active) season
 
 ## TODO
 
-- precizno vreme utakmice
-- first hlaf za kartone
+- Proveriti jos jednom da li najpreciznije ubacuje sve pdoatke
+
+- Za meceve ubaciti future
+
+- UPDATE 
 
 ## Error Note
 

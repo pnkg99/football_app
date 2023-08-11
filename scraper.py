@@ -60,7 +60,7 @@ class mysqldb :
 class scraper(mysqldb) :
     def __init__(self, user, password, host, database):
         mysqldb.__init__(self, user, password, host, database)
-        self.translator = Translator()
+        self.w = Translator()
         self.trns_off = True
     
     def read_xlsx_file_sheet(self, file_path, sheet, lb=0, ub=None, skiprows=1, nrows=300) :

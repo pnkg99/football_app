@@ -9,32 +9,21 @@ def take_xlsx_files_path(path) :
                 file_path = os.path.join(dirpath, filename)
                 xlsx_files_path.append(file_path)
     return xlsx_files_path
-
-def extract_league_id_from_path(file_path):
-    pattern = r'\\(\d+)\s'
-    match = re.search(pattern, file_path)
-    if match:
-        number = int(match.group(1))
-        return number
-    else:
-        return "No numbeeer"
     
-def extract_club_name_from_path(file_path) :
-    last_backslash_index = file_path.rfind("\\")
-    file_name = file_path[last_backslash_index + 1:]
+def extract_club_name_from_path(file_path):
+    file_name = os.path.basename(file_path)
     club_name_index = file_name.find("-")
     club_name = file_name[:club_name_index]
     return club_name
 
 def extract_match_id_from_path(file_path):
-    last_backslash_index = file_path.rfind("\\")
-    file_name = file_path[last_backslash_index + 1:]
+    file_name = os.path.basename(file_path)
     match_name_index = file_name.find(".")
     match_index = file_name[:match_name_index]
-    try : 
+    try:
         match_id = int(match_index)
         return match_id
-    except :
+    except ValueError:
         return "No number"
 
 if __name__ == "__main__" :
@@ -76,8 +65,12 @@ if __name__ == "__main__" :
         if args.stat :
             # Insert Stat History for Leagues, Clubs and Matches
             for file in liga_files :
-                league_id = extract_league_id_from_path(file)
-                filename = os.path.basename(path)
+                filename = os.path.basename(file)
+                try :
+                    league_id = int(filename.split(" ")[0])
+                except Exception as e :
+                    print(e)
+                    exit()
                 app.insert_league_stats_history(file, league_id)
             # Insert Clubs home and away history stats  
             for file in ekipe_home_files :
