@@ -209,7 +209,8 @@ class scraper(mysqldb) :
                         game_description_en = self.translate(game_description_sr)
                         gw = row[2]
                         mp = row[3]
-                        percent = row[4]      
+                        percent = row[4]
+                        percent = round(percent*100, 2)
                         values = f'"{league_id}", "{season_id}","{subcategory_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 0, NOW(), NOW()'
                         query = f'INSERT INTO leagues_stats (league_id, season_id,leagues_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
                         try :
@@ -270,7 +271,8 @@ class scraper(mysqldb) :
                         game_description_en = self.translate(game_description_sr)
                         gw = row[2]
                         mp = row[3]
-                        percent = row[4]      
+                        percent = row[4]  
+                        percent = round(percent*100, 2)    
                         values = f'"{club_id}", "{season_id}","{clubs_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 0, NOW(), NOW()'
                         query = f'INSERT INTO {table} (club_id, season_id,clubs_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
                         try :
@@ -325,6 +327,7 @@ class scraper(mysqldb) :
                         gw = row[2]
                         mp = row[3]
                         percent = row[4]      
+                        percent = round(percent*100, 2)
                         values = f'"{match_id}", "{season_id}","{matches_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 0, NOW(), NOW()'
                         query = f'INSERT INTO matches_stats (match_id, season_id,matches_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
 
@@ -564,7 +567,9 @@ class scraper(mysqldb) :
             season = first_cell.split(' ')[1]
             season_id = self.get_season_id(season)
             active_season_id = self.get_active_season_id()
+            status = -1
             if season_id == active_season_id :
+                status = 0
                 break
             if season_id == None :
                 break
@@ -573,8 +578,8 @@ class scraper(mysqldb) :
             while lb_row_goals < number_of_rows :
                 df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_col_goals, ub=ub_col_goals, nrows=skip_rows_goals, skiprows=lb_row_goals)
                 df1 = self.read_xlsx_file_sheet(file, "Corners", lb=lb_col_corners, ub=ub_col_corners, nrows=skip_rows_goals, skiprows=lb_row_goals)
-                df3 = self.read_xlsx_file_sheet(file, "Yellow cards", lb=lb_col_yellow, ub=ub_col_yellow, nrows=skip_rows_goals, skiprows=lb_row_goals)
                 df2 = self.read_xlsx_file_sheet(file, "Red cards", lb=lb_col_red, ub=ub_col_red, nrows=skip_rows_goals, skiprows=lb_row_goals)
+                df3 = self.read_xlsx_file_sheet(file, "Yellow cards", lb=lb_col_yellow, ub=ub_col_yellow, nrows=skip_rows_goals, skiprows=lb_row_goals)
                 for index, row in df.iterrows():
                     if index == 0 :
                         round = df.iloc[index,0][:2]
@@ -611,9 +616,11 @@ class scraper(mysqldb) :
                                     ht2_home_cards_yellow = row3[2]
                                     ht1_away_cards_yellow = 0
                                     ht2_away_cards_yellow = row3[3]          
-                            values = f'{league_id}, "{season_id}", "{round}", "{home_name}", "{away_name}", "{home_id}", "{away_id}", "{ht_score}", "{f_score}", "{ht1_home_goals}", "{ht1_away_goals}", "{ht2_home_goals}", "{ht2_away_goals}", "{ht1_home_corners}", "{ht1_away_corners}", "{ht2_home_corners}", "{ht2_away_corners}", "{ht1_home_cards_red}", "{ht1_away_cards_red}", "{ht2_home_cards_red}", "{ht2_away_cards_red}", "{ht1_home_cards_yellow}", "{ht1_away_cards_yellow}", "{ht2_home_cards_yellow}", "{ht2_away_cards_yellow}", "{datetime_game}", NOW(), NOW()'
-                            q = f'INSERT INTO {MATCHES_TABLE} (league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, created_at, updated_at) VALUES ({values})'
-                            self.set_query(q)
+                            values = f'{league_id}, "{season_id}", "{round}", "{home_name}", "{away_name}", "{home_id}", "{away_id}", "{ht_score}", "{f_score}", "{ht1_home_goals}", "{ht1_away_goals}", "{ht2_home_goals}", "{ht2_away_goals}", "{ht1_home_corners}", "{ht1_away_corners}", "{ht2_home_corners}", "{ht2_away_corners}", "{ht1_home_cards_red}", "{ht1_away_cards_red}", "{ht2_home_cards_red}", "{ht2_away_cards_red}", "{ht1_home_cards_yellow}", "{ht1_away_cards_yellow}", "{ht2_home_cards_yellow}", "{ht2_away_cards_yellow}", "{datetime_game}",{status}, NOW(), NOW()'
+                            q = f'INSERT INTO {MATCHES_TABLE} (league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at) VALUES ({values})'
+                            #self.set_query(q)
+                            print(q)
+                            #print("home red : ", ht2_home_cards_red, "away red : ", ht2_away_cards_red)
                         except Exception as e :
                             print(e)
                             continue  
