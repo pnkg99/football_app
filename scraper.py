@@ -381,7 +381,6 @@ class scraper(mysqldb) :
                 break
             if season_id > active_season_id :
                 break
-            datasets=0
             for row_index,row in df.iterrows():
                 if 24 > row_index > 3 :
                     table = LEAGUE_GOALS_TABLE
@@ -392,15 +391,12 @@ class scraper(mysqldb) :
                 else :
                     continue
                 rank = row[0]
-                if not rank :
-                    print(row_index)
-                    exit()
                 club_name = row[1]
                 club_id = self.get_club_id(club_name)
+                if club_id == None :
+                            continue
                 values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
                 q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
-                if row[7] == "0" :
-                    break
                 try :
                     self.set_query(q)
                     print(q)
@@ -442,12 +438,13 @@ class scraper(mysqldb) :
                     table = LEAGUE_CORNERS_AWAY_TABLE
                 else :
                     continue
-                if row[6] == '0' :
-                    continue
+                
                 try :
                     rank = row[0]
                     club_name = row[1]
                     club_id = self.get_club_id(club_name)
+                    if club_id == None :
+                        continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
                     q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
                     print(q)
@@ -493,6 +490,8 @@ class scraper(mysqldb) :
                     rank = row[0]
                     club_name = row[1]
                     club_id = self.get_club_id(club_name)
+                    if club_id == None :
+                        continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
                     q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
                     print(q)
@@ -545,6 +544,8 @@ class scraper(mysqldb) :
                     rank = row[0]
                     club_name = row[1]
                     club_id = self.get_club_id(club_name)
+                    if club_id == None :
+                        continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", NOW(), NOW()'
                     q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
                     print(q)
