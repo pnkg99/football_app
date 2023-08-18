@@ -23,14 +23,15 @@ python3 -m venv $venv_name
 source $venv_name/bin/activate
 
 # Install packages
-pip install pandas googletrans #
+pip3 install pandas googletrans mysql-connector-python openpy #
 
-echo "Virtual environmentcreated and packages installed! mysql-connector-python openpy"
+echo "Virtual environmentcreated and packages installed! "
 ```
 
 ## XLSX files 
 
-directories required for script : 
+Unutar ovog direktorijuma nalaze se direktorijumi zemalja koje sadrze sledecu strukturu unutar sebe : 
+* Neophodna struktura da bi program radio. unutar ovih direktorijuma nalaze se fajlovi sa xlsx extenzijom
 
 - Dueli/ 
 - Ekipe/HOME/
@@ -41,17 +42,17 @@ pocetni broj imena fajlova Duela i Liga predstavljaju id za taj duel odnosno lig
 
 # Usage
 
-`python ./program.py --help`
+`python3 ./program.py --help`
 
 ## history
 
-`python program.py history` 
+`python3 program.py history` 
 
 ### history arguments 
 
 first time setup history insert categories and subcategories :
 
-`python ./program.py history --ctg --stat --tbl --mtch` for inserting categories and subcateogries
+`python3 ./program.py history --ctg --stat --tbl --mtch` for inserting categories and subcateogries
 
 - `--ctg` : inserting categories and subcateogries
 
@@ -59,20 +60,10 @@ first time setup history insert categories and subcategories :
 
 - `--tbl` : insert table for leagues
 
-- `--mtch` : insert matches 
-
-### update
-
-drop then insert every colum with current (active) season
-
-## TODO
-
-- Proveriti jos jednom da li najpreciznije ubacuje sve pdoatke
-
-- Za meceve ubaciti future
-
-- UPDATE 
+- `--mtch` : insert matches  
 
 ## Error Note
 
 `Set query rasied exception :  1364 (HY000): Field 'id' doesn't have a default value` Table does not have Auto Increment ID 
+
+* U direktorijumu liga duela i ekipa ne smeju da se nalaze invalidni fajlovi

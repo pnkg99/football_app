@@ -1,4 +1,4 @@
-import io, pandas as pd, mysql.connector 
+import io, pandas as pd, mysql.connector, time
 from googletrans import Translator
 
 # 2019-2027
@@ -62,6 +62,16 @@ class scraper(mysqldb) :
         mysqldb.__init__(self, user, password, host, database)
         self.w = Translator()
         self.trns_off = True
+        
+    
+    def read_xlsx_simple(self, path, sheet) :
+        buffer = io.StringIO()
+        df = pd.read_excel(path, sheet_name=str(sheet))
+        df.to_csv(buffer, index=False)
+        buffer.seek(0)        
+        df = pd.read_csv(buffer, header=None)
+        df = df.fillna('')
+        return df
     
     def read_xlsx_file_sheet(self, file_path, sheet, lb=0, ub=None, skiprows=1, nrows=300) :
         buffer = io.StringIO()
@@ -249,12 +259,13 @@ class scraper(mysqldb) :
                     upper_bound+=6
                     continue
                 active_season_id = self.get_active_season_id()
-                if season_id == active_season_id :
-                    print("Break from active season")
-                    break
+
                 if season_id == None :
                     print("Exit due to season not found", season)
                     continue
+                if season_id > active_season_id :
+                    print("Break from higher season")
+                    break
                 
                 print(f"Inserting stats history for {club_name} season {season} ")
                 datasets = 0
@@ -308,9 +319,9 @@ class scraper(mysqldb) :
                     lower_bound+=6
                     upper_bound+=6
                 active_season_id = self.get_active_season_id()
-                if season_id == active_season_id :
-                    break
                 if season_id == None :
+                    break
+                if season_id > active_season_id :
                     break
                 datasets=0
                 for row_index,row in df.iterrows():
@@ -366,9 +377,9 @@ class scraper(mysqldb) :
                 print("Cant find seasson", e)
                 break
             active_season_id = self.get_active_season_id()
-            if season_id == active_season_id :
-                break
             if season_id == None :
+                break
+            if season_id > active_season_id :
                 break
             datasets=0
             for row_index,row in df.iterrows():
@@ -418,10 +429,10 @@ class scraper(mysqldb) :
                 print("Cant find seasson", e)
                 break
             active_season_id = self.get_active_season_id()
-            if season_id == active_season_id :
-                break
             if season_id == None :
-                break                                       
+                break 
+            if season_id > active_season_id :
+                break                                      
             for row_index,row in df.iterrows():
                 if 25 > row_index > 4 :
                     table = LEAGUE_CORNERS_TABLE
@@ -465,10 +476,10 @@ class scraper(mysqldb) :
                 print("Cant find seasson", e)
                 break
             active_season_id = self.get_active_season_id()
-            if season_id == active_season_id :
-                break
             if season_id == None :
                 break   
+            if season_id > active_season_id :
+                break
             for row_index,row in df.iterrows():
                 if 25 > row_index >= 5 :
                     table =  LEAGUE_CARDS_TABLE
@@ -510,10 +521,10 @@ class scraper(mysqldb) :
                 print("Cant find seasson", e)
                 break
             active_season_id = self.get_active_season_id()
-            if season_id == active_season_id :
-                break
             if season_id == None :
                 break  
+            if season_id > active_season_id :
+                break
             print(ub, lb)      
             for row_index,row in df.iterrows():
                 if 25 > row_index > 4 :
@@ -559,22 +570,40 @@ class scraper(mysqldb) :
         
         number_of_cols = self.read_xlsx_file_sheet(file, "Goals").shape[1] # Horizontal number of cells
         number_of_rows = self.read_xlsx_file_sheet(file, "Goals", nrows=550).shape[0] # Vertical number of cells
-        
+        live_matches = False
         while number_of_cols >= ub_col_goals : # Itterate by each season
             # GEt Season ID 
             df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_col_goals, ub=ub_col_goals, nrows=1, skiprows=3)
             first_cell = df.iloc[0,0]
             season = first_cell.split(' ')[1]
             season_id = self.get_season_id(season)
+            print(season, season_id)
+            if season_id <=3 :
+                status = 1
+                lb_col_corners+=9
+                ub_col_corners+=9
+                lb_col_goals += 8
+                ub_col_goals += 8
+                lb_col_red +=6
+                ub_col_red +=6
+                lb_col_yellow+=7
+                ub_col_yellow+=7
+                continue
+            if season_id == None :
+                break
             active_season_id = self.get_active_season_id()
             status = -1
             if season_id == active_season_id :
                 status = 0
-                break
+                try :
+                    fixdf = self.read_xlsx_simple(file, "Fix")
+                except Exception as e :
+                    print(e)
             if season_id == None :
                 break
             print(f"Inserting matches for league with id {league_id} for {season} Seasson ")
             lb_row_goals = 11
+            # Iterrate by colums 
             while lb_row_goals < number_of_rows :
                 df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_col_goals, ub=ub_col_goals, nrows=skip_rows_goals, skiprows=lb_row_goals)
                 df1 = self.read_xlsx_file_sheet(file, "Corners", lb=lb_col_corners, ub=ub_col_corners, nrows=skip_rows_goals, skiprows=lb_row_goals)
@@ -582,48 +611,89 @@ class scraper(mysqldb) :
                 df3 = self.read_xlsx_file_sheet(file, "Yellow cards", lb=lb_col_yellow, ub=ub_col_yellow, nrows=skip_rows_goals, skiprows=lb_row_goals)
                 for index, row in df.iterrows():
                     if index == 0 :
-                        round = df.iloc[index,0][:2]
-                        print("Round: ", round)
-                        continue
-                    else : # Collect data sets
-                        try: 
-                            home_name = row[0]
-                            away_name = row[1]                
-                            home_id = self.get_club_id(home_name)
-                            away_id = self.get_club_id(away_name)
-                            ht_score = f'{row[2]} - {row[3]}'
-                            f_score = f'{row[4]} - {row[5]}'
-                            ht1_home_goals = row[2]
-                            ht1_away_goals = row[3]
-                            ht2_home_goals = int(row[4]) - int(row[2])
-                            ht2_away_goals = int(row[5]) - int(row[3])
-                            datetime_game = row[6]
-                            for index, row1 in df1.iterrows():
-                                if row1[0] == home_name and row1[1] == away_name :                         
-                                    ht1_home_corners = row1[2]
-                                    ht2_home_corners = int(row1[4]) - int(row1[2])
-                                    ht1_away_corners = row1[3]
-                                    ht2_away_corners = int(row1[5]) - int(row1[3])
-                            for index, row2 in df2.iterrows():
-                                if row2[0] == home_name and row2[1] == away_name :                      
-                                    ht1_home_cards_red = 0
-                                    ht2_home_cards_red = row2[2]
-                                    ht1_away_cards_red = 0
-                                    ht2_away_cards_red = row2[3]
-                            for index, row3 in df3.iterrows():
-                                if row3[0] == home_name and row3[1] == away_name :                             
-                                    ht1_home_cards_yellow = 0
-                                    ht2_home_cards_yellow = row3[2]
-                                    ht1_away_cards_yellow = 0
-                                    ht2_away_cards_yellow = row3[3]          
-                            values = f'{league_id}, "{season_id}", "{round}", "{home_name}", "{away_name}", "{home_id}", "{away_id}", "{ht_score}", "{f_score}", "{ht1_home_goals}", "{ht1_away_goals}", "{ht2_home_goals}", "{ht2_away_goals}", "{ht1_home_corners}", "{ht1_away_corners}", "{ht2_home_corners}", "{ht2_away_corners}", "{ht1_home_cards_red}", "{ht1_away_cards_red}", "{ht2_home_cards_red}", "{ht2_away_cards_red}", "{ht1_home_cards_yellow}", "{ht1_away_cards_yellow}", "{ht2_home_cards_yellow}", "{ht2_away_cards_yellow}", "{datetime_game}",{status}, NOW(), NOW()'
-                            q = f'INSERT INTO {MATCHES_TABLE} (league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at) VALUES ({values})'
-                            #self.set_query(q)
-                            print(q)
-                            #print("home red : ", ht2_home_cards_red, "away red : ", ht2_away_cards_red)
+                        try :
+                            round = df.iloc[0,0]
+                            round = float(round)
+                            round = int(round)
+                            print("Round: ", round)
+                            continue
                         except Exception as e :
                             print(e)
-                            continue  
+                            print(round, type(round))
+                            exit()
+                    else :
+                        home_name = row[0]
+                        status = -1
+                        if home_name == 0  :
+                            found_round = False
+                            counter = 0
+                            for index, row in fixdf.iterrows() :
+                                if counter >= 10 :
+                                    break
+                                if found_round :
+                                    date = row[1]
+                                    home_name = row[2]
+                                    away_name = row[4]
+                                    home_id = self.get_club_id(home_name)
+                                    if home_id == None :
+                                        continue
+                                    away_id = self.get_club_id(away_name)
+                                    parameters = '(league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at)'
+                                    values = f'({league_id}, {season_id}, {round}, \'{home_name}\', \'{away_name}\', {home_id}, {away_id}, "", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \'{date}\', {status}, NOW(), NOW())'
+                                    cmd = f'INSERT INTO matches {parameters} VALUES {values}'
+                                    try :
+                                        self.set_query(cmd)
+                                        print(cmd)
+                                        counter+=1
+                                    except Exception as e :
+                                        print(e, cmd)
+                                elif row[1] == "ROUND" :
+                                    next_row = fixdf.iloc[index + 1]
+                                    round_num_str = next_row[1]
+                                    try:
+                                        round_num = int(round_num_str)
+                                        if round_num == round:
+                                            found_round = True
+                                            print("Found round", round_num)
+                                    except Exception as e:
+                                        print(e)
+                            break
+                        else :
+                            try: 
+                                away_name = row[1]                
+                                home_id = self.get_club_id(home_name)
+                                away_id = self.get_club_id(away_name)
+                                ht_score = f'{row[2]} - {row[3]}'
+                                f_score = f'{row[4]} - {row[5]}'
+                                ht1_home_goals = row[2]
+                                ht1_away_goals = row[3]
+                                ht2_home_goals = int(row[4]) - int(row[2])
+                                ht2_away_goals = int(row[5]) - int(row[3])
+                                datetime_game = row[6]
+                                for index, row1 in df1.iterrows():
+                                    if row1[0] == home_name and row1[1] == away_name :                         
+                                        ht1_home_corners = row1[2]
+                                        ht2_home_corners = int(row1[4]) - int(row1[2])
+                                        ht1_away_corners = row1[3]
+                                        ht2_away_corners = int(row1[5]) - int(row1[3])
+                                for index, row2 in df2.iterrows():
+                                    if row2[0] == home_name and row2[1] == away_name :                      
+                                        ht1_home_cards_red = 0
+                                        ht2_home_cards_red = row2[2]
+                                        ht1_away_cards_red = 0
+                                        ht2_away_cards_red = row2[3]
+                                for index, row3 in df3.iterrows():
+                                    if row3[0] == home_name and row3[1] == away_name :                             
+                                        ht1_home_cards_yellow = 0
+                                        ht2_home_cards_yellow = row3[2]
+                                        ht1_away_cards_yellow = 0
+                                        ht2_away_cards_yellow = row3[3]          
+                                values = f'{league_id}, "{season_id}", "{round}", "{home_name}", "{away_name}", "{home_id}", "{away_id}", "{ht_score}", "{f_score}", "{ht1_home_goals}", "{ht1_away_goals}", "{ht2_home_goals}", "{ht2_away_goals}", "{ht1_home_corners}", "{ht1_away_corners}", "{ht2_home_corners}", "{ht2_away_corners}", "{ht1_home_cards_red}", "{ht1_away_cards_red}", "{ht2_home_cards_red}", "{ht2_away_cards_red}", "{ht1_home_cards_yellow}", "{ht1_away_cards_yellow}", "{ht2_home_cards_yellow}", "{ht2_away_cards_yellow}", "{datetime_game}",{status}, NOW(), NOW()'
+                                q = f'INSERT INTO {MATCHES_TABLE} (league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at) VALUES ({values})'
+                                self.set_query(q)
+                                print(q)
+                            except Exception as e :
+                                print(e, q)
                 lb_row_goals +=14
             lb_col_corners+=9
             ub_col_corners+=9
@@ -634,45 +704,6 @@ class scraper(mysqldb) :
             lb_col_yellow+=7
             ub_col_yellow+=7
 
-    def update_league_goals(self, file, league_id) :
-            season_name = self.get_active_season_name()
-            active_season = "SEASON " + season_name
-            season_id = self.get_season_id(season_name) 
-            df = self.read_xlsx_file_sheet(file, "T-G", nrows= 1)
-            row = df.iloc[0].tolist()
-            if active_season in row:
-                lb = row.index(active_season)
-                ub = lb + 13
-                df = self.read_xlsx_file_sheet(file, "T-G", lb=lb, ub=ub, nrows=72)
-                for row_index, row in df.iterrows() :
-                    if 25 > row_index > 4 :
-                        table = LEAGUE_GOALS_TABLE
-                    elif 48 > row_index > 27 :
-                        table = LEAGUE_GOALS_HOME_TABLE
-                    elif 71 > row_index > 50 :
-                        table = LEAGUE_GOALS_AWAY_TABLE
-                    else :
-                        continue                    
-                    rank = row[0]
-                    club_name = row[1]
-                    club_id = self.get_club_id(club_name)
-                    # q = f"""
-                    # UPDATE {LEAGUE_GOALS_TABLE}
-                    # SET league_id = {league_id},
-                    #     season_id = {season_id},
-                    #     rank = {rank},
-                    #     club_id = {club_id},
-                    #     Pts = {new_Pts_value},
-                    #     GP = {new_GP_value},
-                    #     W = {new_W_value},
-                    #     D = {new_D_value},
-                    #     L = {new_L_value},
-                    #     GF = {new_GF_value},
-                    #     GA = {new_GA_value},
-                    #     updated_at = NOW()
-                    # WHERE {condition};
-                    # """                 
-                    # self.set_query(q)  
 
 # Matches
 

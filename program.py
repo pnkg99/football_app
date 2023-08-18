@@ -47,8 +47,10 @@ if __name__ == "__main__" :
     db = 'foodball_statistics_app_db'
     app = scraper(user, psw, host, db)
     
+    league = "England"
+    
     # XLSX League Files path
-    path = os.getcwd()
+    path = os.path.join(os.getcwd(), league)
     liga_files = take_xlsx_files_path(os.path.join(path, "Liga"))
     ekipe_home_files = take_xlsx_files_path(os.path.join(path,"Ekipe", "HOME"))
     ekipe_away_files = take_xlsx_files_path(os.path.join(path,"Ekipe", "AWAY"))
