@@ -580,15 +580,6 @@ class scraper(mysqldb) :
             print(season, season_id)
             if season_id <=3 :
                 status = 1
-                lb_col_corners+=9
-                ub_col_corners+=9
-                lb_col_goals += 8
-                ub_col_goals += 8
-                lb_col_red +=6
-                ub_col_red +=6
-                lb_col_yellow+=7
-                ub_col_yellow+=7
-                continue
             if season_id == None :
                 break
             active_season_id = self.get_active_season_id()
