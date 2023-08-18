@@ -670,6 +670,7 @@ class scraper(mysqldb) :
                                 ht2_home_goals = int(row[4]) - int(row[2])
                                 ht2_away_goals = int(row[5]) - int(row[3])
                                 datetime_game = row[6]
+                                status = 1
                                 for index, row1 in df1.iterrows():
                                     if row1[0] == home_name and row1[1] == away_name :                         
                                         ht1_home_corners = row1[2]
