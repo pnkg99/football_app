@@ -221,7 +221,7 @@ class scraper(mysqldb) :
                         mp = row[3]
                         percent = row[4]
                         status =1
-                        percent = round(percent*100, 2)
+                        percent = round(float(percent)*100, 2)
                         values = f'"{league_id}", "{season_id}","{subcategory_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", {status}, NOW(), NOW()'
                         query = f'INSERT INTO leagues_stats (league_id, season_id,leagues_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
                         try :
@@ -284,13 +284,15 @@ class scraper(mysqldb) :
                         gw = row[2]
                         mp = row[3]
                         percent = row[4]  
-                        percent = round(percent*100, 2)    
+                        percent = round(float(percent)*100, 2)    
                         values = f'"{club_id}", "{season_id}","{clubs_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 1, NOW(), NOW()'
                         query = f'INSERT INTO {table} (club_id, season_id,clubs_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
                         try :
                             self.set_query(query)
                             datasets+=1
                         except Exception as e :
+                            print(df)
+                            exit()
                             print("Set query rasied exception : ", e)  
                     else : 
                         pass
@@ -339,7 +341,7 @@ class scraper(mysqldb) :
                         gw = row[2]
                         mp = row[3]
                         percent = row[4]      
-                        percent = round(percent*100, 2)
+                        percent = round(float(percent)*100, 2)
                         values = f'"{match_id}", "{season_id}","{matches_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 1, NOW(), NOW()'
                         query = f'INSERT INTO matches_stats (match_id, season_id,matches_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
 
