@@ -263,7 +263,7 @@ class scraper(mysqldb) :
 
                 if season_id == None :
                     print("Exit due to season not found", season)
-                    continue
+                    break
                 if season_id > active_season_id :
                     print("Break from higher season")
                     break
