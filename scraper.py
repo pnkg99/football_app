@@ -1,4 +1,4 @@
-import io, pandas as pd, mysql.connector, time
+import io, pandas as pd, mysql.connector, time, sys
 from googletrans import Translator
 
 # 2019-2027
@@ -54,8 +54,8 @@ class mysqldb :
         
     def set_query(self, query) : 
         self.cursor.execute(query)
-        self.cnx.commit()       
-
+        status = self.cnx.commit()       
+        return status
 
 class scraper(mysqldb) :
     def __init__(self, user, password, host, database):
@@ -561,31 +561,31 @@ class scraper(mysqldb) :
             lb+=13
             
     def insert_matches(self, file, league_id) :
-        lb_col_goals = 1
-        ub_col_goals = 8
-        lb_col_corners = 1
-        ub_col_corners = 9
-        lb_col_red = 1
-        ub_col_red = 6
-        lb_col_yellow = 1
-        ub_col_yellow = 7
+        lb_goals = 1
+        ub_goals = 8
+        lb_corners = 1
+        ub_corners = 9
+        lb_red = 1
+        ub_red = 6
+        lb_yellow = 1
+        ub_yellow = 7
        
         skip_rows_goals = 10
         
         number_of_cols = self.read_xlsx_file_sheet(file, "Goals").shape[1] # Horizontal number of cells
         number_of_rows = self.read_xlsx_file_sheet(file, "Goals", nrows=550).shape[0] # Vertical number of cells
         live_matches = False
-        while number_of_cols >= ub_col_goals : # Itterate by each season
+        while number_of_cols >= ub_goals : # Itterate by each season
             # GEt Season ID 
-            df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_col_goals, ub=ub_col_goals, nrows=1, skiprows=3)
+            df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_goals, ub=ub_goals, nrows=1, skiprows=3)
             first_cell = df.iloc[0,0]
             season = first_cell.split(' ')[1]
             season_id = self.get_season_id(season)
             print(season, season_id)
-            if season_id <=3 :
-                status = 1
             if season_id == None :
                 break
+            if season_id <=3 :
+                status = 1
             active_season_id = self.get_active_season_id()
             status = -1
             if season_id == active_season_id :
@@ -594,16 +594,14 @@ class scraper(mysqldb) :
                     fixdf = self.read_xlsx_simple(file, "Fix")
                 except Exception as e :
                     print(e)
-            if season_id == None :
-                break
             print(f"Inserting matches for league with id {league_id} for {season} Seasson ")
-            lb_row_goals = 11
+            goals_rows = 11
             # Iterrate by colums 
-            while lb_row_goals < number_of_rows :
-                df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_col_goals, ub=ub_col_goals, nrows=skip_rows_goals, skiprows=lb_row_goals)
-                df1 = self.read_xlsx_file_sheet(file, "Corners", lb=lb_col_corners, ub=ub_col_corners, nrows=skip_rows_goals, skiprows=lb_row_goals)
-                df2 = self.read_xlsx_file_sheet(file, "Red cards", lb=lb_col_red, ub=ub_col_red, nrows=skip_rows_goals, skiprows=lb_row_goals)
-                df3 = self.read_xlsx_file_sheet(file, "Yellow cards", lb=lb_col_yellow, ub=ub_col_yellow, nrows=skip_rows_goals, skiprows=lb_row_goals)
+            while goals_rows < number_of_rows :
+                df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_goals, ub=ub_goals, nrows=skip_rows_goals, skiprows=goals_rows)
+                corners_frame = self.read_xlsx_file_sheet(file, "Corners", lb=lb_corners, ub=ub_corners, nrows=skip_rows_goals, skiprows=goals_rows)
+                red_frame = self.read_xlsx_file_sheet(file, "Red cards", lb=lb_red, ub=ub_red, nrows=skip_rows_goals, skiprows=goals_rows)
+                yellow_frame = self.read_xlsx_file_sheet(file, "Yellow cards", lb=lb_yellow, ub=ub_yellow, nrows=skip_rows_goals, skiprows=goals_rows)
                 for index, row in df.iterrows():
                     if index == 0 :
                         try :
@@ -666,19 +664,19 @@ class scraper(mysqldb) :
                                 ht2_away_goals = int(row[5]) - int(row[3])
                                 datetime_game = row[6]
                                 status = 1
-                                for index, row1 in df1.iterrows():
+                                for index, row1 in corners_frame.iterrows():
                                     if row1[0] == home_name and row1[1] == away_name :                         
                                         ht1_home_corners = row1[2]
                                         ht2_home_corners = int(row1[4]) - int(row1[2])
                                         ht1_away_corners = row1[3]
                                         ht2_away_corners = int(row1[5]) - int(row1[3])
-                                for index, row2 in df2.iterrows():
+                                for index, row2 in red_frame.iterrows():
                                     if row2[0] == home_name and row2[1] == away_name :                      
                                         ht1_home_cards_red = 0
                                         ht2_home_cards_red = row2[2]
                                         ht1_away_cards_red = 0
                                         ht2_away_cards_red = row2[3]
-                                for index, row3 in df3.iterrows():
+                                for index, row3 in yellow_frame.iterrows():
                                     if row3[0] == home_name and row3[1] == away_name :                             
                                         ht1_home_cards_yellow = 0
                                         ht2_home_cards_yellow = row3[2]
@@ -690,25 +688,618 @@ class scraper(mysqldb) :
                                 print(q)
                             except Exception as e :
                                 print(e, q)
-                lb_row_goals +=14
-            lb_col_corners+=9
-            ub_col_corners+=9
-            lb_col_goals += 8
-            ub_col_goals += 8
-            lb_col_red +=6
-            ub_col_red +=6
-            lb_col_yellow+=7
-            ub_col_yellow+=7
+                goals_rows +=14
+            lb_corners+=9
+            ub_corners+=9
+            lb_goals += 8
+            ub_goals += 8
+            lb_red +=6
+            ub_red +=6
+            lb_yellow+=7
+            ub_yellow+=7
 
+    def drop_active_seasson(self, table):
+        active_season_id = self.get_active_season_id()
+        query = f"DELETE FROM {table} WHERE season_id = {active_season_id}"
+        try :
+            self.set_query(query)
+            print(query)
+        except Exception as e :
+            print(e)
+    
+    def select_active(self, table) :
+        active_season_id = self.get_active_season_id()
+        query = f" SELECT * FROM `leagues_stats` WHERE season_id = 4;"
+        try :
+            resp = self.set_query(query)
+            print(resp)
+        except Exception as e :
+            print(e)    
+        
+        
+    def update_league_statistic(self, path, league_id) :
+        for sheet in range(1, 18):
+            lower_bound = 1 
+            upper_bound = 7
+            print("Sheet : ", sheet)
+            while True :
+                df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
+                try :
+                    season = df.iloc[0,0].split(' ')[1]
+                except Exception as e :
+                    print(e)
+                    lower_bound+=6
+                    upper_bound+=6
+                    continue
+                season_id = self.get_season_id(season)
+                active_seasson_id = self.get_active_season_id()
+                if season_id == None :
+                    break
+                elif season_id > active_seasson_id :
+                    break
+                elif season_id < active_seasson_id :
+                    lower_bound+=6
+                    upper_bound+=6
+                    continue
+                elif season_id == active_seasson_id :
+                    print(f"Inserting history stats for league with id : {league_id} for {season} Seasson ")
+                    for row_index,row in df.iterrows():
+                        if row_index == 0 :
+                            continue
+                        if row[0] != '' and (row[1] == '' or row[1] =="0")  :
+                            subcategory_sr = row[0]
+                            subcategory_id = self.get_subcategory_id(subcategory_sr)
+                            if subcategory_id == None :
+                                continue             
+                        elif row[0] != '' and row[1] != '' :
+                            game_sr = row[0]
+                            game_en = self.translate(game_sr)
+                            game_description_sr = row[1]
+                            game_description_en = self.translate(game_description_sr)
+                            gw = row[2]
+                            mp = row[3]
+                            percent = row[4]
+                            status = 1
+                            percent = round(float(percent)*100, 2)
+                            values = f'"{league_id}", "{season_id}","{subcategory_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", {status}, NOW(), NOW()'
+                            query = f'INSERT INTO leagues_stats (league_id, season_id,leagues_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
+                            try :
+                                self.set_query(query)
+                                print(query)
+                            except Exception as e :
+                                if subcategory_id == None:
+                                    print("Dont have subcategory : ", subcategory_sr)
+                                    break
+                                else : 
+                                    print(e)
+                                    continue
+                        else :
+                            pass 
+                    lower_bound+=6
+                    upper_bound+=6
 
-# Matches
-
-# GOALS_TABLE
-# CORNERS_TABLE
-# YELLOW_CARDS_TABLE
-# RED_CARDS_TABLE
-
-
-
+    def update_clubs_stats_history(self,club_id,home, path) :
+        club_name = self.get_club_name(club_id)
+        if home :
+            table = CLUBS_HOME_STATS_TABLE
+        else :
+            table = CLUBS_AWAY_STATS_TABLE
             
+        for sheet in range(1, 18):
+            sheet_datasets = 0
+            lower_bound = 49
+            upper_bound =  55
+            print("Sheet : ", sheet)
+            while True :
+                df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
+                try :
+                    season = df.iloc[0,0].split(' ')[1]
+                    season_id = self.get_season_id(season)
+                except Exception as e :
+                    print(e)
+                    lower_bound+=6
+                    upper_bound+=6
+                    continue
+                active_season_id = self.get_active_season_id()
+
+                if season_id == None :
+                    print("Exit due to season not found", season)
+                    break
+                if season_id > active_season_id :
+                    print("Break from higher season")
+                    break
+                if season_id == active_season_id :          
+                    print(f"Inserting stats history for {club_name} season {season} ")
+                    datasets = 0
+                    for row_index,row in df.iterrows():
+                        if row_index == 0 :
+                            continue
+                        if row[0] != '' and (row[1] == '' or row[1] =="0")  :
+                            subcategory_sr = row[0]
+                            clubs_stats_subcategorie_id = self.get_subcategory_id(subcategory_sr)                        
+                        elif row[0] != '' and row[1] != '' :
+                            game_sr = row[0]
+                            game_en = self.translate(game_sr)
+                            game_description_sr = row[1]
+                            game_description_en = self.translate(game_description_sr)
+                            gw = row[2]
+                            mp = row[3]
+                            percent = row[4]  
+                            percent = round(float(percent)*100, 2)    
+                            values = f'"{club_id}", "{season_id}","{clubs_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 1, NOW(), NOW()'
+                            query = f'INSERT INTO {table} (club_id, season_id,clubs_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
+                            try :
+                                self.set_query(query)
+                                datasets+=1
+                            except Exception as e :
+                                print("Set query rasied exception : ", e) 
+                                exit()
+                        else : 
+                            pass
+                    lower_bound+=6
+                    upper_bound+=6
+                    sheet_datasets+=datasets
+                    
+                elif season_id < active_season_id:
+                    lower_bound+=6
+                    upper_bound+=6
+                    continue
+                print(f"{sheet_datasets} number of datasets {club_name} - Sheet : {sheet} - Season : {season}")
+                
+    # MATCHES STATS
+    def update_matches_stats_history(self, match_id, path) :            
+        for sheet in range(1, 18):
+            sheet_datasets =0
+            lower_bound = 49
+            upper_bound = 55
+            print("Sheet : ", sheet)
+            list = [13,14,15]
+            if sheet in list :
+                lower_bound = 37
+                upper_bound = 43
+            while True :
+                df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
+                try :
+                    season = df.iloc[0,0].split(' ')[1]
+                    season_id = self.get_season_id(season)
+                except Exception as e :
+                    print(e)
+                    lower_bound+=6
+                    upper_bound+=6
+                active_season_id = self.get_active_season_id()
+                if season_id == None :
+                    break
+                if season_id > active_season_id :
+                    break
+                elif season_id < active_season_id:
+                    lower_bound+=6
+                    upper_bound+=6
+                    continue
+                elif season_id == active_season_id :
+                    datasets=0
+                    for row_index,row in df.iterrows():
+                        if row_index == 0 :
+                            continue
+                        if row[0] != '' and (row[1] == '' or row[1] =="0")  :
+                            subcategory_sr = row[0]
+                            matches_stats_subcategorie_id = self.get_subcategory_id(subcategory_sr)                        
+                        elif row[0] != '' and row[1] != '' :
+                            game_sr = row[0]
+                            game_en = self.translate(game_sr)
+                            game_description_sr = row[1]
+                            game_description_en = self.translate(game_description_sr)
+                            gw = row[2]
+                            mp = row[3]
+                            percent = row[4]      
+                            percent = round(float(percent)*100, 2)
+                            values = f'"{match_id}", "{season_id}","{matches_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 1, NOW(), NOW()'
+                            query = f'INSERT INTO matches_stats (match_id, season_id,matches_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
+
+                            try :
+                                self.set_query(query)
+                                datasets+=1
+                            except Exception as e :
+                                print("Set query rasied exception : ", e)
+                                break   
+                        else :
+                            pass 
+                    lower_bound+=6
+                    upper_bound+=6
+                    sheet_datasets+=datasets
+            print(f"{sheet_datasets} datasets Match : {match_id} - Sheet : {sheet} - Season : {season}")
+
+        ####  UPDATE  TABLES  ####
+                    
+    ### T-G ### Table - Goals
+
+    def update_table_goals(self,file,league_id) :
+        lb = 1
+        ub = 14
+        while True : 
+            try :
+                df = self.read_xlsx_file_sheet(file, "T-G", lb=lb, ub=ub, nrows=72)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == None :
+                break
+            elif season_id > active_season_id :
+                break
+            elif season_id < active_season_id :
+                ub+=14
+                lb+=14
+                continue
+            elif season_id ==active_season_id :
+                for row_index,row in df.iterrows():
+                    if 24 > row_index > 3 :
+                        table = LEAGUE_GOALS_TABLE
+                    elif 47 > row_index > 26 :
+                        table = LEAGUE_GOALS_HOME_TABLE
+                    elif 70 > row_index > 49 :
+                        table = LEAGUE_GOALS_AWAY_TABLE
+                    else :
+                        continue
+                    rank = row[0]
+                    club_name = row[1]
+                    club_id = self.get_club_id(club_name)
+                    if club_id == None :
+                                continue
+                    values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
+                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                    try :
+                        self.set_query(q)
+                        print(q)
+                    except Exception as e :
+                        print("Query exception", e)
+                        pass
+                ub+=14
+                lb+=14
+                         
+
+    ### T-C ### Table - Corners
+
+    def update_table_corners(self,file, league_id) :
+        lb = 1
+        ub = 12
+        while True :
+            try :     
+                df = self.read_xlsx_file_sheet(file, "T-C", lb=lb, ub=ub,nrows=73)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == None :
+                break 
+            elif season_id > active_season_id :
+                break 
+            elif season_id < active_season_id :
+                ub+=12
+                lb+=12
+                continue
+            elif season_id == active_season_id :                                  
+                for row_index,row in df.iterrows():
+                    if 25 > row_index > 4 :
+                        table = LEAGUE_CORNERS_TABLE
+                    elif 49 > row_index > 28 :
+                        table = LEAGUE_CORNERS_HOME_TABLE
+                    elif 74 > row_index > 52 :
+                        table = LEAGUE_CORNERS_AWAY_TABLE
+                    else :
+                        continue
+                    
+                    try :
+                        rank = row[0]
+                        club_name = row[1]
+                        club_id = self.get_club_id(club_name)
+                        if club_id == None :
+                            continue
+                        values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
+                        q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
+                        print(q)
+                        self.set_query(q)
+                    except Exception as e:
+                        print(e)
+                        break
+                ub+=12
+                lb+=12
+    
+    ### T Cards ### Table - Cards
+
+    def update_table_cards(self,file, league_id) :
+        lb = 1
+        ub = 12
+        while True :
+            try:   
+                df = self.read_xlsx_file_sheet(file, "T Card", lb=lb, ub=ub,nrows=75)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == None :
+                break   
+            elif season_id > active_season_id :
+                break
+            elif season_id < active_season_id :
+                ub+=12
+                lb+=12
+                continue
+            elif season_id == active_season_id :
+                for row_index,row in df.iterrows():
+                    if 25 > row_index >= 5 :
+                        table =  LEAGUE_CARDS_TABLE
+                    elif 49 > row_index >= 29 :
+                        table = LEAGUE_CARDS_HOME_TABLE
+                    elif 73 >= row_index >= 53 :
+                        table = LEAGUE_CARDS_AWAY_TABLE
+                    else :
+                        continue
+                    try:
+                        rank = row[0]
+                        club_name = row[1]
+                        club_id = self.get_club_id(club_name)
+                        if club_id == None :
+                            continue
+                        values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
+                        q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
+                        print(q)
+                        self.set_query(q)
+                    except Exception as e :
+                        print(e)
+                        break        
+                ub+=12
+                lb+=12
+        print(season)
+    ### T-Half ###  Table - HalfTime
+    
+    def update_table_half(self,file, league_id) :
+        lb = 1
+        ub = 13
+        while True : 
+            try :     
+                df = self.read_xlsx_file_sheet(file, "T-Half", lb=lb, ub=ub, nrows=150)
+            except Exception as e :
+                print(e)
+                break
+            try :
+                season = df.iloc[0,0].split(' ')[1]
+                season_id = self.get_season_id(season)
+            except Exception as e :
+                print("Cant find seasson", e)
+                break
+            active_season_id = self.get_active_season_id()
+            if season_id == None :
+                break  
+            elif season_id > active_season_id :
+                break
+            elif season_id < active_season_id :
+                ub+=13
+                lb+=13
+                continue
+            elif season_id == active_season_id :      
+                for row_index,row in df.iterrows():
+                    if 25 > row_index > 4 :
+                        table = LEAGUES_GOALS_FIRST_HALF_TABLES
+                    elif 49 > row_index > 28 :
+                        table = LEAGUES_GOALS_SECOND_HALF_TABLES
+                    elif 73 > row_index > 52 :
+                        table = LEAGUES_GOALS_HOME_FIRST_HALF_TABLES
+                    elif 97 > row_index > 76 :
+                        table = LEAGUES_GOALS_HOME_SECOND_HALF_TABLES
+                    elif 121 > row_index > 100 :
+                        table = LEAGUES_GOALS_AWAY_FIRST_HALF_TABLES
+                    elif 145 > row_index > 124 :
+                        table = LEAGUES_GOALS_AWAY_SECOND_HALF_TABLES
+                    else :
+                        continue
+                    try :
+                        rank = row[0]
+                        club_name = row[1]
+                        club_id = self.get_club_id(club_name)
+                        if club_id == None :
+                            continue
+                        values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", NOW(), NOW()'
+                        q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                        print(q)
+                        self.set_query(q)
+                    except Exception as e :
+                        print(e)
+                        print("Row index : ",row_index)
+                        break
+                ub+=13
+                lb+=13
+
+    def update_matches(self, file, league_id) :
+               
+        # granice za golove 
+        lb_goals = 1
+        ub_goals = 8
+        # geanice za kornere
+        lb_corners = 1
+        ub_corners = 9
+        # granice za crvene kartone
+        lb_red = 1
+        ub_red = 6
+        # granice za zute kartone
+        lb_yellow = 1
+        ub_yellow = 7
+        
+        # Za preskakanje redova u sheetu
+        skip_rows_goals = 10
+        
+        number_of_cols = self.read_xlsx_file_sheet(file, "Goals").shape[1] # broj kolona
+        number_of_rows = self.read_xlsx_file_sheet(file, "Goals", nrows=550).shape[0] # broj redova
+        live_matches = False # promenjljiva za 0 status matcheva Lajv
+        
+        while number_of_cols >= ub_goals :
+            df = self.read_xlsx_file_sheet( file, "Goals", lb=lb_goals, ub=ub_goals, nrows=1, skiprows=3)
+            
+            first_cell = df.iloc[0,0]
+            try :
+                season = first_cell.split(' ')[1]
+            except Exception as e :
+                print(e)
+                break
+            season_id = self.get_season_id(season)
+            active_season_id = self.get_active_season_id()
+            print(season_id)
+            if season_id == None or season_id > active_season_id:
+                break
+            elif season_id < active_season_id : # Preskoci stare sezone
+                ub_goals += 8
+                lb_goals += 8
+                lb_corners+=9
+                ub_corners+=9
+                lb_red +=6
+                ub_red +=6
+                lb_yellow+=7
+                ub_yellow+=7
+                continue
+            elif season_id == active_season_id :
+                print("Aktivna sezonaaa")
+                goals_rows = 11
+               
+                # Ide po sezonama
+                while goals_rows < number_of_rows :
+                    
+                    if goals_rows < 514 :
+                        goals_rows +=14
+                        continue
+                    
+                    goals_frame = self.read_xlsx_file_sheet(file, "Goals", lb=lb_goals, ub=ub_goals, nrows=skip_rows_goals, skiprows=goals_rows)
+                    corners_frame = self.read_xlsx_file_sheet(file, "Corners", lb=lb_corners, ub=ub_corners, nrows=skip_rows_goals, skiprows=goals_rows)
+                    red_frame = self.read_xlsx_file_sheet(file, "Red cards", lb=lb_red, ub=ub_red, nrows=skip_rows_goals, skiprows=goals_rows)
+                    yellow_frame = self.read_xlsx_file_sheet(file, "Yellow cards", lb=lb_yellow, ub=ub_yellow, nrows=skip_rows_goals, skiprows=goals_rows)
+                    
+                    round = goals_frame.iloc[0,0]
+                    round = int(float(round))
+                    print("Round: ", round)
+                    
+                    # Ide po redoviima runde  
+                    for index, row in goals_frame.iterrows():
+                        if index == 0 : # prvi red runde nema vrednosti
+                            continue
+                        
+                        home_name = row[0] 
+                        if home_name == 0  : # idi na sledecu rundu
+                            break
+                        
+                        status = 1 # odigran match
+                        away_name = row[1]                
+                        home_id = self.get_club_id(home_name)
+                        away_id = self.get_club_id(away_name)
+                        ht_score = f'{row[2]} - {row[3]}'
+                        ft_score = f'{row[4]} - {row[5]}'
+                        ht1_home_goals = row[2]
+                        ht1_away_goals = row[3]
+                        ht2_home_goals = int(row[4]) - int(row[2])
+                        ht2_away_goals = int(row[5]) - int(row[3])
+                        datetime_game = row[6]
+                        
+                        get_match_query = (
+                            f"SELECT id "
+                            f"FROM matches "
+                            f"WHERE home_id = '{home_id}' "
+                            f"AND away_id = '{away_id}' "
+                            f"AND season_id = '{season_id}' "
+                            f"AND league_id = '{league_id}' "
+                            f"AND round = '{round}'"
+                        )
+                        try :
+                            match_id = self.get_one_row(get_match_query)
+                        except Exception as e :
+                            print(e)
+                            if match_id == None :
+                                print(f"Cant find match betweeen {home_name} and {away_name} in season {season} round {round}")
+                                exit()
+                        for index, row1 in corners_frame.iterrows():
+                            if row1[0] == home_name and row1[1] == away_name :                         
+                                ht1_home_corners = row1[2]
+                                ht2_home_corners = int(row1[4]) - int(row1[2])
+                                ht1_away_corners = row1[3]
+                                ht2_away_corners = int(row1[5]) - int(row1[3])
+                        for index, row2 in red_frame.iterrows():
+                            if row2[0] == home_name and row2[1] == away_name :                      
+                                ht1_home_cards_red = 0
+                                ht2_home_cards_red = row2[2]
+                                ht1_away_cards_red = 0
+                                ht2_away_cards_red = row2[3]
+                        for index, row3 in yellow_frame.iterrows():
+                            if row3[0] == home_name and row3[1] == away_name :                             
+                                ht1_home_cards_yellow = 0
+                                ht2_home_cards_yellow = row3[2]
+                                ht1_away_cards_yellow = 0
+                                ht2_away_cards_yellow = row3[3]          
+                        update_values = (
+                            "round = '{}', "
+                            "home_name = '{}', "
+                            "away_name = '{}', "
+                            "home_id = '{}', "
+                            "away_id = '{}', "
+                            "ht_score = '{}', "
+                            "ft_score = '{}', "
+                            "ht1_home_goals = '{}', "
+                            "ht1_away_goals = '{}', "
+                            "ht2_home_goals = '{}', "
+                            "ht2_away_goals = '{}', "
+                            "ht1_home_corners = '{}', "
+                            "ht1_away_corners = '{}', "
+                            "ht2_home_corners = '{}', "
+                            "ht2_away_corners = '{}', "
+                            "ht1_home_cards_red = '{}', "
+                            "ht1_away_cards_red = '{}', "
+                            "ht2_home_cards_red = '{}', "
+                            "ht2_away_cards_red = '{}', "
+                            "ht1_home_cards_yellow = '{}', "
+                            "ht1_away_cards_yellow = '{}', "
+                            "ht2_home_cards_yellow = '{}', "
+                            "ht2_away_cards_yellow = '{}', "
+                            "datetime_game = '{}', "
+                            "status = '{}', "
+                            "updated_at = NOW()"
+                        ).format(
+                            round, home_name, away_name, home_id, away_id,
+                            ht_score, ft_score, ht1_home_goals, ht1_away_goals,
+                            ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners,
+                            ht2_home_corners, ht2_away_corners, ht1_home_cards_red,
+                            ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red,
+                            ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow,
+                            ht2_away_cards_yellow, datetime_game, status
+                        )    
+                        q = f"UPDATE matches SET {update_values} WHERE id = {match_id}"                    
+                        try :
+                            self.set_query(q)
+                            print(q)
+                        except Exception as e :
+                            print(e, q)
+                            
+                    goals_rows +=14
+
+                # Next Season borders
+                lb_corners+=9
+                ub_corners+=9
+                lb_goals += 8
+                ub_goals += 8
+                lb_red +=6
+                ub_red +=6
+                lb_yellow+=7
+                ub_yellow+=7
  
