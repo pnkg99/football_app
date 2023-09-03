@@ -1,5 +1,4 @@
-import io, pandas as pd, mysql.connector, time, sys
-from googletrans import Translator
+import io, pandas as pd, mysql.connector, time, sys, json
 
 # 2019-2027
 SEASON_TABLE = "seasons"
@@ -52,6 +51,14 @@ class mysqldb :
         except:
             return None
         
+    def get_all_rows(self, query) :
+        try:
+            self.cursor.execute(query)
+            result = self.cursor.fetchall()
+            return result
+        except:
+            return None
+        
     def set_query(self, query) : 
         self.cursor.execute(query)
         status = self.cnx.commit()       
@@ -60,9 +67,13 @@ class mysqldb :
 class scraper(mysqldb) :
     def __init__(self, user, password, host, database):
         mysqldb.__init__(self, user, password, host, database)
-        self.w = Translator()
-        self.trns_off = True
+        self.trns_off = False
+        self.dictionary = self.get_dict()
         
+    def get_dict(self):
+        with open("lang.json", "r") as dct :
+            d = json.load(dct)
+        return d
     
     def read_xlsx_simple(self, path, sheet) :
         buffer = io.StringIO()
@@ -91,10 +102,10 @@ class scraper(mysqldb) :
         return df
     
     def translate(self, string):
-        if self.trns_off : 
+        if self.trns_off :
             return "NOT SET"
         try :
-            return self.translator.translate( string, dest='en').text
+            return self.dictionary[string]
         except :
             return "NOT SET"
     
@@ -227,6 +238,7 @@ class scraper(mysqldb) :
                         try :
                             self.set_query(query)
                             datasets+=1
+                            print(query)
                         except Exception as e :
                             print("Set query rasied exception : ", e)       
                     else :
@@ -259,15 +271,14 @@ class scraper(mysqldb) :
                     lower_bound+=6
                     upper_bound+=6
                     continue
-                active_season_id = self.get_active_season_id()
-
+            
                 if season_id == None :
                     print("Exit due to season not found", season)
                     break
                 if season_id > active_season_id :
                     print("Break from higher season")
                     break
-                
+                active_season_id = self.get_active_season_id()
                 print(f"Inserting stats history for {club_name} season {season} ")
                 datasets = 0
                 for row_index,row in df.iterrows():
@@ -293,7 +304,6 @@ class scraper(mysqldb) :
                         except Exception as e :
                             print(df)
                             exit()
-                            print("Set query rasied exception : ", e)  
                     else : 
                         pass
                 lower_bound+=6
@@ -561,6 +571,7 @@ class scraper(mysqldb) :
             lb+=13
             
     def insert_matches(self, file, league_id) :
+        
         lb_goals = 1
         ub_goals = 8
         lb_corners = 1
@@ -1145,6 +1156,8 @@ class scraper(mysqldb) :
         # Za preskakanje redova u sheetu
         skip_rows_goals = 10
         
+        fixdf = self.read_xlsx_simple(file, "Fix")
+        
         number_of_cols = self.read_xlsx_file_sheet(file, "Goals").shape[1] # broj kolona
         number_of_rows = self.read_xlsx_file_sheet(file, "Goals", nrows=550).shape[0] # broj redova
         live_matches = False # promenjljiva za 0 status matcheva Lajv
@@ -1179,10 +1192,7 @@ class scraper(mysqldb) :
                
                 # Ide po sezonama
                 while goals_rows < number_of_rows :
-                    
-                    if goals_rows < 514 :
-                        goals_rows +=14
-                        continue
+
                     
                     goals_frame = self.read_xlsx_file_sheet(file, "Goals", lb=lb_goals, ub=ub_goals, nrows=skip_rows_goals, skiprows=goals_rows)
                     corners_frame = self.read_xlsx_file_sheet(file, "Corners", lb=lb_corners, ub=ub_corners, nrows=skip_rows_goals, skiprows=goals_rows)
@@ -1193,13 +1203,52 @@ class scraper(mysqldb) :
                     round = int(float(round))
                     print("Round: ", round)
                     
+                    matches_required = []
+                    get_all_query=f"SELECT * FROM matches WHERE league_id = '{league_id}' AND season_id = '{season_id}' AND round = '{round}'"
+                    out = self.get_all_rows(get_all_query)
+                    for row in out :
+                        matches_required.append({"home_id" : row[6], "away_id" : row[7]})
+                    matches_found = []
                     # Ide po redoviima runde  
                     for index, row in goals_frame.iterrows():
                         if index == 0 : # prvi red runde nema vrednosti
                             continue
                         
                         home_name = row[0] 
-                        if home_name == 0  : # idi na sledecu rundu
+                        if home_name == 0  :
+                            found_round = False
+                            counter = 0
+                            for index, row in fixdf.iterrows() :
+                                if counter >= 10 :
+                                    break
+                                if found_round :
+                                    date = row[1]
+                                    home_name = row[2]
+                                    away_name = row[4]
+                                    home_id = self.get_club_id(home_name)
+                                    if home_id == None :
+                                        continue
+                                    away_id = self.get_club_id(away_name)
+                                    status = -1
+                                    parameters = '(league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at)'
+                                    values = f'({league_id}, {season_id}, {round}, \'{home_name}\', \'{away_name}\', {home_id}, {away_id}, "", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \'{date}\', {status}, NOW(), NOW())'
+                                    cmd = f'INSERT INTO matches {parameters} VALUES {values}'
+                                    try :
+                                        self.set_query(cmd)
+                                        print(cmd)
+                                        counter+=1
+                                    except Exception as e :
+                                        print(e, cmd)
+                                elif row[1] == "ROUND" :
+                                    next_row = fixdf.iloc[index + 1]
+                                    round_num_str = next_row[1]
+                                    try:
+                                        round_num = int(round_num_str)
+                                        if round_num == round:
+                                            found_round = True
+                                            print("Found round", round_num)
+                                    except Exception as e:
+                                        print(e)
                             break
                         
                         status = 1 # odigran match
@@ -1286,13 +1335,25 @@ class scraper(mysqldb) :
                         )    
                         q = f"UPDATE matches SET {update_values} WHERE id = {match_id}"                    
                         try :
+                            if home_id == 1 and away_id == 2 :
+                                print("WTFFF")
+                            matches_found.append({"home_id" : home_id ,"away_id" : away_id })
                             self.set_query(q)
-                            print(q)
+                            #print(q)
                         except Exception as e :
                             print(e, q)
                             
                     goals_rows +=14
+                    set1 = {frozenset(item.items()) for item in matches_required}
+                    set2 = {frozenset(item.items()) for item in matches_found}
 
+                    # Find the dictionaries that are present in set1 but not in set2
+                    missing_dicts = [dict(frozen_dict) for frozen_dict in (set1 - set2)]
+                    
+                    
+                    # print(matches_required, len(matches_required))
+                    # print(matches_found, len(matches_found))
+                    # print(missing_dicts)
                 # Next Season borders
                 lb_corners+=9
                 ub_corners+=9
@@ -1302,4 +1363,86 @@ class scraper(mysqldb) :
                 ub_red +=6
                 lb_yellow+=7
                 ub_yellow+=7
+                
  
+    def insert_top(self,club_id,home, path) :
+        club_name = self.get_club_name(club_id)
+        if home :
+            tables =  ["clubs_home_last5_stats","clubs_home_last10_stats","clubs_home_last15_stats","clubs_home_last20_stats","clubs_home_last25_stats","clubs_home_last30_stats"]
+        else :
+            tables = ["clubs_away_last5_stats","clubs_away_last10_stats","clubs_away_last15_stats","clubs_away_last20_stats","clubs_away_last25_stats","clubs_away_last30_stats"]
+            
+        for sheet in range(1, 18):
+            sheet_datasets = 0
+            lower_bound = 1
+            upper_bound =  7
+            print("Sheet : ", sheet)
+            while True :
+                df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
+                try :
+                    top = int(float(df.iloc[0,0]))
+                    print(top)
+                except Exception as e :
+                    print(e)
+                    break
+                datasets = 0
+                for row_index,row in df.iterrows():
+                    if row_index < 2 :
+                        continue
+                    if row[0] != '' and (row[1] == '' or row[1] =="0")  :
+                        subcategory_sr = row[0]
+                        clubs_stats_subcategorie_id = self.get_subcategory_id(subcategory_sr)                        
+                    elif row[0] != '' and row[1] != '' :
+                        
+                        table = [t for t in tables if t.endswith(f"last{top}_stats")][0]
+                        
+                        game_sr = row[0]
+                        game_en = self.translate(game_sr)
+                        game_description_sr = row[1]
+                        game_description_en = self.translate(game_description_sr)
+                        gw = row[2]
+                        mp = row[3]
+                        percent = row[4]  
+                        percent = round(float(percent)*100, 2)    
+                        values = f'"{club_id}","{clubs_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 1, NOW(), NOW()'
+                        query = f'INSERT INTO {table} (club_id,clubs_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
+                        try :
+                            self.set_query(query)
+                            print(query)
+                            datasets+=1
+                        except Exception as e :
+                            print(e, query, "top : ", top)
+                            exit()
+                    else : 
+                        continue
+                lower_bound+=6
+                upper_bound+=6
+                sheet_datasets+=datasets
+            print(f"{sheet_datasets} number of datasets {club_name} - Sheet : {sheet} ")
+            
+    def lang(self, file) :
+        df_eng = self.read_xlsx_simple(file, "ENG")
+        df_rs = self.read_xlsx_simple(file, "RS")
+        dictionary = {}
+        for index, row in df_rs.iterrows() :
+            if index < 3 :
+                continue
+            if all( cell == "" for cell in row ) :
+                continue
+        
+            for idx, item in enumerate(row) :
+                if idx == 0 :
+                    continue
+                if item :
+                    rs_value = df_rs.iloc[index, idx]
+                    try :
+                        eng_value = df_eng.iloc[index, idx]
+                    except :
+                        eng_value = "NOT_SET"
+                    entry = {
+                        "name_eng": eng_value,
+                    }
+                    # Add the entry to the dictionary
+                    dictionary[rs_value] = entry
+        with open("lang.json", "w") as json_file:
+            json.dump(dictionary, json_file, indent=4)

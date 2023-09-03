@@ -19,6 +19,7 @@ table_names = [
     "leagues_goals_away_second_half_tables"
 ]
 
+top_tables = ["top5", "top10", "top15", "top20", "top25", "top30"]
 
 def take_xlsx_files_path(path) :
     xlsx_files_path=[]
@@ -28,7 +29,23 @@ def take_xlsx_files_path(path) :
                 file_path = os.path.join(dirpath, filename)
                 xlsx_files_path.append(file_path)
     return xlsx_files_path
-    
+
+def take_xlsx_files_path_single_dir(directory):
+    xlsx_files_path = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".xlsx"):
+            file_path = os.path.join(directory, filename)
+            xlsx_files_path.append(file_path)
+    return xlsx_files_path
+
+def get_immediate_subdirectories(directory):
+    subdirectory_paths = []
+    for item in os.listdir(directory):
+        item_path = os.path.join(directory, item)
+        if os.path.isdir(item_path):
+            subdirectory_paths.append(item_path)
+    return subdirectory_paths
+
 def extract_club_name_from_path(file_path):
     file_name = os.path.basename(file_path)
     club_name_index = file_name.find("-")
@@ -70,6 +87,10 @@ if __name__ == "__main__" :
     
     update_matches_parser = update_subparsers.add_parser('matches', help='Update matches information for current seasson')
     
+    update_subparsers.add_parser('top', help='Update top for clubs')
+    
+    subparsers.add_parser('lang', help="Something with language")
+    
     args = parser.parse_args()
     
     # DB info
@@ -79,25 +100,22 @@ if __name__ == "__main__" :
     db = 'foodball_statistics_app_db'
     app = scraper(user, psw, host, db)
     
-    league = "England"
-    
     # XLSX League Files path
-    path = os.path.join(os.getcwd(), league)
-    liga_files = take_xlsx_files_path(os.path.join(path, "Liga"))
-    ekipe_home_files = take_xlsx_files_path(os.path.join(path,"Ekipe", "HOME"))
-    ekipe_away_files = take_xlsx_files_path(os.path.join(path,"Ekipe", "AWAY"))
-    dueli_files = take_xlsx_files_path(os.path.join(path, "Dueli"))
-    
-    league_id = 1
+    league_path = os.path.join(os.getcwd(), "Leagues")
+    liga_files = take_xlsx_files_path_single_dir(league_path)    
+    leagues_dirs = get_immediate_subdirectories(league_path)
     
     f = liga_files[0]
+    
+    lang_file = os.path.join(os.getcwd(), "lang.xlsx")
+    
     
     if args.subcommand == 'history':
         if args.ctg :  
             app.insert_cateogires(f)
             app.insert_subcategories(f)
         if args.stat :
-            # Insert Stat History for Leagues, Clubs and Matches
+
             for file in liga_files :
                 filename = os.path.basename(file)
                 try :
@@ -106,19 +124,28 @@ if __name__ == "__main__" :
                     print(e)
                     continue
                 app.insert_league_stats_history(file, league_id)
-            # Insert Clubs home and away history stats  
-            for file in ekipe_home_files :
-                club_name = extract_club_name_from_path(file)
-                club_id = app.get_club_id(club_name)
-                app.insert_clubs_stats_history(club_id,home=True, path=file)
-            for file in ekipe_away_files :
-                club_name = extract_club_name_from_path(file)
-                club_id = app.get_club_id(club_name)
-                app.insert_clubs_stats_history(club_id,home=False, path=file)            
+
+            for league in leagues_dirs :
+                home_path = os.path.join(league, "Clubs", "Home")
+                away_path = os.path.join(league, "Clubs", "Away")
+                
+                club_home_files = take_xlsx_files_path(home_path)
+                away_home_files = take_xlsx_files_path(away_path)
+                
+                for file in club_home_files :
+                    club_name = extract_club_name_from_path(file)
+                    club_id = app.get_club_id(club_name)
+                    app.insert_clubs_stats_history(club_id,home=True, path=file)
+                for file in away_home_files :
+                    club_name = extract_club_name_from_path(file)
+                    club_id = app.get_club_id(club_name)
+                    app.insert_clubs_stats_history(club_id,home=False, path=file)            
             #Inset Matches history stats
-            for file in dueli_files :
-                match_id = extract_match_id_from_path(file)
-                app.insert_matches_stats_history(match_id, file)
+            for league in leagues_dirs :
+                matches_files = take_xlsx_files_path(os.path.join(league_path, "Matches"))
+                for file in matches_files :
+                    match_id = extract_match_id_from_path(file)
+                    app.insert_matches_stats_history(match_id, file)
             
         if args.tbl :
             for file in liga_files :
@@ -134,12 +161,23 @@ if __name__ == "__main__" :
                 app.insert_league_half_table(file, league_id)
 
         if args.mtch :
-            app.insert_matches(f, league_id)
+            for file in liga_files :
+                filename = os.path.basename(file)
+                try :
+                    league_id = int(filename.split(" ")[0])
+                except Exception as e :
+                    print(e)
+                    continue
+                app.insert_matches(file, league_id)
             
     elif args.subcommand == 'update' :
+        
         if args.update_subcommand == 'stats' :
+            
             if args.leagues :
+                
                 app.drop_active_seasson("leagues_stats")
+                
                 for file in liga_files :
                     filename = os.path.basename(file)
                     try :
@@ -148,23 +186,33 @@ if __name__ == "__main__" :
                         print(f"Bad xlsx file {file}")
                         continue
                     app.update_league_statistic(file, league_id)
+                    
             if args.clubs :
-                app.drop_active_seasson("clubs_home_stats")
-                for file in ekipe_home_files :
-                    club_name = extract_club_name_from_path(file)
-                    club_id = app.get_club_id(club_name)
-                    if club_id == None :
-                        print(f"bad club xlsx file {file}")
-                        continue
-                    app.update_clubs_stats_history(club_id,home=True, path=file)
-                app.drop_active_seasson("clubs_away_stats")
-                for file in ekipe_away_files :
-                    club_name = extract_club_name_from_path(file)
-                    club_id = app.get_club_id(club_name)
-                    if club_id == None :
-                        print(f"bad club xlsx file {file}")
-                        continue
-                    app.update_clubs_stats_history(club_id,home=False, path=file)
+   
+                for league in leagues_dirs :
+                    home_path = os.path.join(league, "Clubs", "Home")
+                    away_path = os.path.join(league, "Clubs", "Away")
+                    club_home_files = take_xlsx_files_path(home_path)
+                    away_home_files = take_xlsx_files_path(away_path)
+                    
+                    app.drop_active_seasson("clubs_away_stats")
+                    app.drop_active_seasson("clubs_home_stats")
+                    for file in club_home_files :
+                        club_name = extract_club_name_from_path(file)
+                        club_id = app.get_club_id(club_name)
+                        if club_id == None :
+                            print(f"bad club xlsx file {file}")
+                            continue
+                        app.update_clubs_stats_history(club_id,home=True, path=file)
+                    
+                    for file in away_home_files :
+                        club_name = extract_club_name_from_path(file)
+                        club_id = app.get_club_id(club_name)
+                        if club_id == None :
+                            print(f"bad club xlsx file {file}")
+                            continue
+                        app.update_clubs_stats_history(club_id,home=False, path=file)
+                        
             if args.matches :
                 app.drop_active_seasson("matches_stats")
                 for file in dueli_files :
@@ -174,6 +222,23 @@ if __name__ == "__main__" :
                         print(f"bad xlsx file {file}")
                         continue
                     app.update_matches_stats_history(match_id, file)
+        
+        elif args.update_subcommand == 'top' :
+            for league in leagues_dirs :
+                home_path = os.path.join(league, "Clubs", "Home")
+                away_path = os.path.join(league, "Clubs", "Away")
+                
+                club_home_files = take_xlsx_files_path(home_path)
+                away_home_files = take_xlsx_files_path(away_path)
+                
+                for file in club_home_files :
+                    club_name = extract_club_name_from_path(file)
+                    club_id = app.get_club_id(club_name)
+                    app.insert_top(club_id,home=True, path=file)
+                for file in away_home_files :
+                    club_name = extract_club_name_from_path(file)
+                    club_id = app.get_club_id(club_name)
+                    app.insert_top(club_id,home=False, path=file)            
                     
         elif args.update_subcommand == 'tables' :
             for table in table_names :
@@ -191,8 +256,17 @@ if __name__ == "__main__" :
                 app.update_table_half(file, league_id)
                 
         elif args.update_subcommand == 'matches' :
-            app.update_matches(f, league_id)
+            for file in liga_files :
+                filename = os.path.basename(file)
+                try :
+                    league_id = int(filename.split(" ")[0])
+                except Exception as e :
+                    print(e)
+                    continue
+                app.update_matches(file, league_id)
+    
         else :
             print("Provide update subcommand")
-    #app.update_league_goals(f, league_id)
-
+            
+    elif args.subcommand == 'lang':
+        app.lang(lang_file)
