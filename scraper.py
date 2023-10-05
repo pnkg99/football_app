@@ -105,7 +105,7 @@ class scraper(mysqldb) :
         if self.trns_off :
             return "NOT SET"
         try :
-            return self.dictionary[string]
+            return self.dictionary[string]["name_eng"]
         except :
             return "NOT SET"
     
@@ -1381,7 +1381,9 @@ class scraper(mysqldb) :
                 df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
                 try :
                     top = int(float(df.iloc[0,0]))
-                    print(top)
+                    if top%5!=0 :
+                        print(top)
+                        exit()
                 except Exception as e :
                     print(e)
                     break
