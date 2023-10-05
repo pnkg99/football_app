@@ -142,6 +142,13 @@ class scraper(mysqldb) :
         club_name = self.get_one_row(query)        
         return club_name
         
+    def get_active_round(self,fix) :
+        for index, row in fix.iterrows() :
+            try : 
+                active_round = int(row[1])
+            except:
+                continue
+        return active_round
     ## INJECT INTO MYSQL TABLES
 
     # insert categories 1-17 for league, duels and teams
@@ -599,12 +606,23 @@ class scraper(mysqldb) :
                 status = 1
             active_season_id = self.get_active_season_id()
             status = -1
+            if season_id < active_season_id : # Preskoci stare sezone
+                ub_goals += 8
+                lb_goals += 8
+                lb_corners+=9
+                ub_corners+=9
+                lb_red +=6
+                ub_red +=6
+                lb_yellow+=7
+                ub_yellow+=7
+                continue
             if season_id == active_season_id :
-                status = 0
                 try :
                     fixdf = self.read_xlsx_simple(file, "Fix")
+                    active_round = self.get_active_round(fixdf)
                 except Exception as e :
                     print(e)
+                
             print(f"Inserting matches for league with id {league_id} for {season} Seasson ")
             goals_rows = 11
             # Iterrate by colums 
@@ -627,7 +645,10 @@ class scraper(mysqldb) :
                             exit()
                     else :
                         home_name = row[0]
-                        status = -1
+                        if round == active_round :
+                            status = 0
+                        else :
+                            status = -1
                         if home_name == 0  :
                             found_round = False
                             counter = 0
