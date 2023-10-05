@@ -140,12 +140,7 @@ if __name__ == "__main__" :
                     club_name = extract_club_name_from_path(file)
                     club_id = app.get_club_id(club_name)
                     app.insert_clubs_stats_history(club_id,home=False, path=file)            
-            #Inset Matches history stats
-            for league in leagues_dirs :
-                matches_files = take_xlsx_files_path(os.path.join(league_path, "Matches"))
-                for file in matches_files :
-                    match_id = extract_match_id_from_path(file)
-                    app.insert_matches_stats_history(match_id, file)
+
             
         if args.tbl :
             for file in liga_files :

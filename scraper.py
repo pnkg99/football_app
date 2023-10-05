@@ -35,7 +35,6 @@ LEAGUES_GOALS_AWAY_FIRST_HALF_TABLES = "leagues_goals_away_first_half_tables"
 LEAGUES_GOALS_AWAY_SECOND_HALF_TABLES="leagues_goals_away_second_half_tables"
 
 CLUBS_TABLE = "clubs"
-
 MATCHES_TABLE = "matches"
 
 class mysqldb :
@@ -318,62 +317,7 @@ class scraper(mysqldb) :
                 sheet_datasets+=datasets
             print(f"{sheet_datasets} number of datasets {club_name} - Sheet : {sheet} - Season : {season}")
                 
-    # MATCHES STATS
-    def insert_matches_stats_history(self, match_id, path) :            
-        for sheet in range(1, 18):
-            sheet_datasets =0
-            lower_bound = 49
-            upper_bound = 55
-            print("Sheet : ", sheet)
-            list = [13,14,15]
-            if sheet in list :
-                lower_bound = 37
-                upper_bound = 43
-            while True :
-                df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
-                try :
-                    season = df.iloc[0,0].split(' ')[1]
-                    season_id = self.get_season_id(season)
-                except Exception as e :
-                    print(e)
-                    lower_bound+=6
-                    upper_bound+=6
-                active_season_id = self.get_active_season_id()
-                if season_id == None :
-                    break
-                if season_id > active_season_id :
-                    break
-                datasets=0
-                for row_index,row in df.iterrows():
-                    if row_index == 0 :
-                        continue
-                    if row[0] != '' and (row[1] == '' or row[1] =="0")  :
-                        subcategory_sr = row[0]
-                        matches_stats_subcategorie_id = self.get_subcategory_id(subcategory_sr)                        
-                    elif row[0] != '' and row[1] != '' :
-                        game_sr = row[0]
-                        game_en = self.translate(game_sr)
-                        game_description_sr = row[1]
-                        game_description_en = self.translate(game_description_sr)
-                        gw = row[2]
-                        mp = row[3]
-                        percent = row[4]      
-                        percent = round(float(percent)*100, 2)
-                        values = f'"{match_id}", "{season_id}","{matches_stats_subcategorie_id}","{game_sr}", "{game_en}","{game_description_sr}", "{game_description_en}","{gw}", "{mp}", "{percent}", 1, NOW(), NOW()'
-                        query = f'INSERT INTO matches_stats (match_id, season_id,matches_stats_subcategorie_id, game_sr,game_en,game_description_sr,game_description_en, GW, MP, percent,status, created_at, updated_at) VALUES ({values})'
 
-                        try :
-                            self.set_query(query)
-                            datasets+=1
-                        except Exception as e :
-                            print("Set query rasied exception : ", e)
-                            break   
-                    else :
-                        pass 
-                lower_bound+=6
-                upper_bound+=6
-                sheet_datasets+=datasets
-            print(f"{sheet_datasets} datasets Match : {match_id} - Sheet : {sheet} - Season :")
                   
         ####    LEAGUE  ####
         ####    TABLES  ####
@@ -1386,7 +1330,7 @@ class scraper(mysqldb) :
                 ub_yellow+=7
                 
  
-    def insert_top(self,club_id,home, path) :
+    def insert_top(self, club_id,home, path) :
         club_name = self.get_club_name(club_id)
         if home :
             tables =  ["clubs_home_last5_stats","clubs_home_last10_stats","clubs_home_last15_stats","clubs_home_last20_stats","clubs_home_last25_stats","clubs_home_last30_stats"]
@@ -1398,16 +1342,22 @@ class scraper(mysqldb) :
             lower_bound = 1
             upper_bound =  7
             print("Sheet : ", sheet)
+            previous_top =0
             while True :
                 df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
                 try :
                     top = int(float(df.iloc[0,0]))
-                    if top%5!=0 :
-                        print(top)
-                        exit()
+                    if top not in [5,10,15,20,25,30] :
+                        if previous_top in [0,30] :
+                            top = 5
+                        else :
+                            top = previous_top + 5
+                    
+                    previous_top = top
                 except Exception as e :
                     print(e)
                     break
+                
                 datasets = 0
                 for row_index,row in df.iterrows():
                     if row_index < 2 :
@@ -1416,7 +1366,10 @@ class scraper(mysqldb) :
                         subcategory_sr = row[0]
                         clubs_stats_subcategorie_id = self.get_subcategory_id(subcategory_sr)                        
                     elif row[0] != '' and row[1] != '' :
-                        
+                        if top not in [5,10,15,20,25,30] :
+                            print(top)
+                            print(previous_top)
+                            exit()
                         table = [t for t in tables if t.endswith(f"last{top}_stats")][0]
                         
                         game_sr = row[0]
