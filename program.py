@@ -122,18 +122,18 @@ if __name__ == "__main__" :
             app.insert_subcategories(f)
         if args.stat :
 
-            for file in liga_files :
-                filename = os.path.basename(file)
-                try :
-                    league_id = int(filename.split(" ")[0])
-                except Exception as e :
-                    print(e)
-                    continue
-                app.insert_league_stats_history(file, league_id)
+            # for file in liga_files :
+            #     filename = os.path.basename(file)
+            #     try :
+            #         league_id = int(filename.split(" ")[0])
+            #     except Exception as e :
+            #         print(e)
+            #         continue
+            #     app.insert_league_stats_history(file, league_id)
 
             for league in leagues_dirs :
-                home_path = os.path.join(league, "Clubs", "Home")
-                away_path = os.path.join(league, "Clubs", "Away")
+                home_path = os.path.join(league, "Home")
+                away_path = os.path.join(league, "Away")
                 
                 club_home_files = take_xlsx_files_path(home_path)
                 away_home_files = take_xlsx_files_path(away_path)

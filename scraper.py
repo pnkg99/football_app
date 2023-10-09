@@ -560,7 +560,6 @@ class scraper(mysqldb) :
             if season_id == active_season_id :
                 try :
                     fixdf = self.read_xlsx_simple(file, "Fix")
-                    active_round = self.get_active_round(fixdf)
                 except Exception as e :
                     print(e)
                 
