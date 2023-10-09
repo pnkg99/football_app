@@ -107,6 +107,13 @@ class scraper(mysqldb) :
             return self.dictionary[string]["name_eng"]
         except :
             return "NOT SET"
+        
+    def clear_tables(self, tables) :
+        for table in tables :
+            sql = f"DELETE FROM `{table}`"
+            heh = self.set_query(sql)
+        return True
+            
     
     # GET ID's from 
     
@@ -143,10 +150,8 @@ class scraper(mysqldb) :
         
     def get_active_round(self,fix) :
         for index, row in fix.iterrows() :
-            try : 
-                active_round = int(row[1])
-            except:
-                continue
+            pass
+        active_round = 7
         return active_round
     ## INJECT INTO MYSQL TABLES
 
@@ -269,6 +274,7 @@ class scraper(mysqldb) :
             print("Sheet : ", sheet)
             while True :
                 df = self.read_xlsx_file_sheet(path, sheet, lower_bound, upper_bound)
+                active_season_id = self.get_active_season_id()
                 try :
                     season = df.iloc[0,0].split(' ')[1]
                     season_id = self.get_season_id(season)
@@ -277,14 +283,14 @@ class scraper(mysqldb) :
                     lower_bound+=6
                     upper_bound+=6
                     continue
-            
+
                 if season_id == None :
                     print("Exit due to season not found", season)
                     break
                 if season_id > active_season_id :
                     print("Break from higher season")
                     break
-                active_season_id = self.get_active_season_id()
+                
                 print(f"Inserting stats history for {club_name} season {season} ")
                 datasets = 0
                 for row_index,row in df.iterrows():
@@ -550,16 +556,7 @@ class scraper(mysqldb) :
                 status = 1
             active_season_id = self.get_active_season_id()
             status = -1
-            if season_id < active_season_id : # Preskoci stare sezone
-                ub_goals += 8
-                lb_goals += 8
-                lb_corners+=9
-                ub_corners+=9
-                lb_red +=6
-                ub_red +=6
-                lb_yellow+=7
-                ub_yellow+=7
-                continue
+
             if season_id == active_season_id :
                 try :
                     fixdf = self.read_xlsx_simple(file, "Fix")
@@ -589,11 +586,8 @@ class scraper(mysqldb) :
                             exit()
                     else :
                         home_name = row[0]
-                        if round == active_round :
-                            status = 0
-                        else :
-                            status = -1
                         if home_name == 0  :
+                            print("from fix")
                             found_round = False
                             counter = 0
                             for index, row in fixdf.iterrows() :
@@ -612,7 +606,7 @@ class scraper(mysqldb) :
                                     cmd = f'INSERT INTO matches {parameters} VALUES {values}'
                                     try :
                                         self.set_query(cmd)
-                                        print(cmd)
+                                        #print(cmd)
                                         counter+=1
                                     except Exception as e :
                                         print(e, cmd)
@@ -628,24 +622,31 @@ class scraper(mysqldb) :
                                         print(e)
                             break
                         else :
-                            try: 
+                            try:
+                                print("from goals") 
                                 away_name = row[1]                
                                 home_id = self.get_club_id(home_name)
                                 away_id = self.get_club_id(away_name)
-                                ht_score = f'{row[2]} - {row[3]}'
-                                f_score = f'{row[4]} - {row[5]}'
+                                
+                                r2 = int(float(row[2]))
+                                r3 = int(float(row[3]))
+                                r4 = int(float(row[4]))
+                                r5 = int(float(row[5]))
+                                
+                                ht_score = f'{r2} - {r3}'
+                                f_score = f'{r4} - {r5}'
                                 ht1_home_goals = row[2]
                                 ht1_away_goals = row[3]
-                                ht2_home_goals = int(row[4]) - int(row[2])
-                                ht2_away_goals = int(row[5]) - int(row[3])
+                                ht2_home_goals = r4 - r2
+                                ht2_away_goals = r5 - r3
                                 datetime_game = row[6]
                                 status = 1
                                 for index, row1 in corners_frame.iterrows():
                                     if row1[0] == home_name and row1[1] == away_name :                         
                                         ht1_home_corners = row1[2]
-                                        ht2_home_corners = int(row1[4]) - int(row1[2])
+                                        ht2_home_corners = int(float(row[4])) - int(float(row[2]))
                                         ht1_away_corners = row1[3]
-                                        ht2_away_corners = int(row1[5]) - int(row1[3])
+                                        ht2_away_corners = int(float(row[5])) - int(float(row[3]))
                                 for index, row2 in red_frame.iterrows():
                                     if row2[0] == home_name and row2[1] == away_name :                      
                                         ht1_home_cards_red = 0

@@ -19,6 +19,7 @@ table_names = [
     "leagues_goals_away_second_half_tables"
 ]
 
+
 top_tables = ["top5", "top10", "top15", "top20", "top25", "top30"]
 
 def take_xlsx_files_path(path) :
@@ -61,6 +62,8 @@ def extract_match_id_from_path(file_path):
         return match_id
     except ValueError:
         return "No number"
+    
+    
 
 if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
@@ -99,6 +102,9 @@ if __name__ == "__main__" :
     host = 'localhost'
     db = 'foodball_statistics_app_db'
     app = scraper(user, psw, host, db)
+    
+    app.clear_tables(table_names)
+    app.clear_tables(["matches"])
     
     # XLSX League Files path
     league_path = os.path.join(os.getcwd(), "Leagues")
