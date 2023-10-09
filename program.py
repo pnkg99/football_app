@@ -103,8 +103,8 @@ if __name__ == "__main__" :
     db = 'foodball_statistics_app_db'
     app = scraper(user, psw, host, db)
     
-    app.clear_tables(table_names)
-    app.clear_tables(["matches"])
+    # app.clear_tables(table_names)
+    # app.clear_tables(["matches"])
     
     # XLSX League Files path
     league_path = os.path.join(os.getcwd(), "Leagues")
@@ -122,14 +122,14 @@ if __name__ == "__main__" :
             app.insert_subcategories(f)
         if args.stat :
 
-            # for file in liga_files :
-            #     filename = os.path.basename(file)
-            #     try :
-            #         league_id = int(filename.split(" ")[0])
-            #     except Exception as e :
-            #         print(e)
-            #         continue
-            #     app.insert_league_stats_history(file, league_id)
+            for file in liga_files :
+                filename = os.path.basename(file)
+                try :
+                    league_id = int(filename.split(" ")[0])
+                except Exception as e :
+                    print(e)
+                    continue
+                app.insert_league_stats_history(file, league_id)
 
             for league in leagues_dirs :
                 home_path = os.path.join(league, "Home")
