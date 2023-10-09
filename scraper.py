@@ -366,7 +366,7 @@ class scraper(mysqldb) :
                 if club_id == None :
                             continue
                 values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
-                q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
                 try :
                     self.set_query(q)
                     print(q)
@@ -416,7 +416,7 @@ class scraper(mysqldb) :
                     if club_id == None :
                         continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
-                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
+                    q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
                     print(q)
                     self.set_query(q)
                 except Exception as e:
@@ -463,7 +463,7 @@ class scraper(mysqldb) :
                     if club_id == None :
                         continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
-                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
+                    q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
                     print(q)
                     self.set_query(q)
                 except Exception as e :
@@ -517,7 +517,7 @@ class scraper(mysqldb) :
                     if club_id == None :
                         continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", NOW(), NOW()'
-                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                    q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
                     print(q)
                     self.set_query(q)
                 except Exception as e :
@@ -928,7 +928,7 @@ class scraper(mysqldb) :
                     if club_id == None :
                                 continue
                     values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", "{row[12]}", NOW(), NOW()'
-                    q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                    q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, Pts, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
                     try :
                         self.set_query(q)
                         print(q)
@@ -983,7 +983,7 @@ class scraper(mysqldb) :
                         if club_id == None :
                             continue
                         values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
-                        q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
+                        q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, GP, FT_CF, FT_CA, HT_CF, HT_CA, created_at, updated_at) VALUES ({values})'
                         print(q)
                         self.set_query(q)
                     except Exception as e:
@@ -1035,7 +1035,7 @@ class scraper(mysqldb) :
                         if club_id == None :
                             continue
                         values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", NOW(), NOW()'
-                        q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
+                        q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, GP, YCF, YCA, RCF, RCA, created_at, updated_at) VALUES ({values})'
                         print(q)
                         self.set_query(q)
                     except Exception as e :
@@ -1093,7 +1093,7 @@ class scraper(mysqldb) :
                         if club_id == None :
                             continue
                         values = f'{league_id},"{season_id}", "{rank}", "{club_id}", "{row[6]}", "{row[7]}", "{row[8]}", "{row[9]}", "{row[10]}", "{row[11]}", NOW(), NOW()'
-                        q = f'INSERT INTO {table} (league_id, season_id, rank, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
+                        q = f'INSERT INTO {table} (league_id, season_id, `rank`, club_id, GP, W, D, L, GF, GA, created_at, updated_at) VALUES ({values})'
                         print(q)
                         self.set_query(q)
                     except Exception as e :
