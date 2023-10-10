@@ -597,15 +597,18 @@ class scraper(mysqldb) :
                                     home_name = row[2]
                                     away_name = row[4]
                                     home_id = self.get_club_id(home_name)
-                                    if home_id == None :
-                                        continue
                                     away_id = self.get_club_id(away_name)
+                                    if home_id == None :
+                                        print(home_name, league_id)
+                                        continue
+                                    if away_id == None :
+                                        print(away_id, league_id)
+                                        continue
                                     parameters = '(league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at)'
                                     values = f'({league_id}, {season_id}, {round}, \'{home_name}\', \'{away_name}\', {home_id}, {away_id}, "", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \'{date}\', {status}, NOW(), NOW())'
                                     cmd = f'INSERT INTO matches {parameters} VALUES {values}'
                                     try :
                                         self.set_query(cmd)
-                                        #print(cmd)
                                         counter+=1
                                     except Exception as e :
                                         print(e, cmd)
@@ -622,7 +625,6 @@ class scraper(mysqldb) :
                             break
                         else :
                             try:
-                                print("from goals") 
                                 away_name = row[1]                
                                 home_id = self.get_club_id(home_name)
                                 away_id = self.get_club_id(away_name)
@@ -640,6 +642,12 @@ class scraper(mysqldb) :
                                 ht2_away_goals = r5 - r3
                                 datetime_game = row[6]
                                 status = 1
+                                if home_id == None :
+                                    print(home_name, league_id)
+                                    continue
+                                if away_id == None :
+                                    print(away_name, league_id)
+                                    continue
                                 for index, row1 in corners_frame.iterrows():
                                     if row1[0] == home_name and row1[1] == away_name :                         
                                         ht1_home_corners = row1[2]
@@ -661,7 +669,6 @@ class scraper(mysqldb) :
                                 values = f'{league_id}, "{season_id}", "{round}", "{home_name}", "{away_name}", "{home_id}", "{away_id}", "{ht_score}", "{f_score}", "{ht1_home_goals}", "{ht1_away_goals}", "{ht2_home_goals}", "{ht2_away_goals}", "{ht1_home_corners}", "{ht1_away_corners}", "{ht2_home_corners}", "{ht2_away_corners}", "{ht1_home_cards_red}", "{ht1_away_cards_red}", "{ht2_home_cards_red}", "{ht2_away_cards_red}", "{ht1_home_cards_yellow}", "{ht1_away_cards_yellow}", "{ht2_home_cards_yellow}", "{ht2_away_cards_yellow}", "{datetime_game}",{status}, NOW(), NOW()'
                                 q = f'INSERT INTO {MATCHES_TABLE} (league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at) VALUES ({values})'
                                 self.set_query(q)
-                                print(q)
                             except Exception as e :
                                 print(e, q)
                 goals_rows +=14
