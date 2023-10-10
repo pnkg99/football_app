@@ -6,37 +6,29 @@ python version : python >=3.1
 
 dependencies install command : 
 
-- `pip3 install pandas googletrans mysql-connector-python openpy`
+- `pip3 install pandas mysql-connector-python openpy`
 
 ## Ububtu Venv setupo script 
 
 ```sh
-#!/bin/bash
 
-# Name of the virtual environment
-venv_name="footballpy"
+pip3 install pandas openpyxl mysql-connector-python openpy dotenv 
 
-# Create virtual environment
-python3 -m venv $venv_name
-
-# Activate the virtual environment
-source $venv_name/bin/activate
-
-# Install packages
-pip3 install pandas googletrans mysql-connector-python openpy #
-
-echo "Virtual environmentcreated and packages installed! "
 ```
+
+if that crash try update pip version
+
+`python -m pip install --upgrade pip`
 
 ## XLSX files 
 
 Unutar ovog direktorijuma nalaze se direktorijumi zemalja koje sadrze sledecu strukturu unutar sebe : 
 * Neophodna struktura da bi program radio. unutar ovih direktorijuma nalaze se fajlovi sa xlsx extenzijom
 
-- Dueli/ 
-- Ekipe/HOME/
-- Ekipe/AWAY/
-- Liga/
+unutar `Leagues` direktoriuma nalaze se fajlovi podataka
+ - ekstenzijom `.xlsx` i brojem `id` lige na pocetku imena fajlova (tabele, mecevi i statistika lige) 
+ - Drugi direktorijumi unutar kojih psotoje `Home` i `Away` direktorijumi sa xlsx fajlovima klubova. (statistika klubova)
+
 
 pocetni broj imena fajlova Duela i Liga predstavljaju id za taj duel odnosno ligu
 
@@ -50,10 +42,6 @@ pocetni broj imena fajlova Duela i Liga predstavljaju id za taj duel odnosno lig
 
 ### history arguments 
 
-first time setup history insert categories and subcategories :
-
-`python3 ./program.py history --ctg --stat --tbl --mtch` for inserting categories and subcateogries
-
 - `--ctg` : inserting categories and subcateogries
 
 - `--stat` : insert statistic for leagues, clubs and matches
@@ -61,6 +49,18 @@ first time setup history insert categories and subcategories :
 - `--tbl` : insert table for leagues
 
 - `--mtch` : insert matches  
+
+## Nesha Standard Procedure 
+
+0. .env configuration
+
+1. `python3 program.py history --ctg`
+
+2. `python3 program.py history --tbl` 
+
+3. `python3 program.py history --mtch`
+
+4. ! moramo da imamo fajlove klubova unutar Leagues `python3 program.py history --stat`
 
 ## Error Note
 

@@ -542,20 +542,20 @@ class scraper(mysqldb) :
         
         number_of_cols = self.read_xlsx_file_sheet(file, "Goals").shape[1] # Horizontal number of cells
         number_of_rows = self.read_xlsx_file_sheet(file, "Goals", nrows=550).shape[0] # Vertical number of cells
-        live_matches = False
+        
         while number_of_cols >= ub_goals : # Itterate by each season
             # GEt Season ID 
             df = self.read_xlsx_file_sheet(file, "Goals", lb=lb_goals, ub=ub_goals, nrows=1, skiprows=3)
             first_cell = df.iloc[0,0]
             season = first_cell.split(' ')[1]
             season_id = self.get_season_id(season)
+            active_season_id = self.get_active_season_id()
+            status = -1
             print(season, season_id)
             if season_id == None :
                 break
             if season_id <=3 :
                 status = 1
-            active_season_id = self.get_active_season_id()
-            status = -1
 
             if season_id == active_season_id :
                 try :
@@ -581,8 +581,8 @@ class scraper(mysqldb) :
                             continue
                         except Exception as e :
                             print(e)
-                            print(round, type(round))
-                            exit()
+                            goals_rows +=14
+                            continue
                     else :
                         home_name = row[0]
                         if home_name == 0  :

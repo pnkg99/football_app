@@ -1,6 +1,7 @@
 from scraper import *
 import argparse, re, os
 
+
 table_names = [
     "leagues_goals_tables",
     "leagues_goals_home_tables",
@@ -96,15 +97,37 @@ if __name__ == "__main__" :
     
     args = parser.parse_args()
     
+    # Open the .env file
+    with open('.env', 'r') as file:
+        # Read the lines
+        lines = file.readlines()
+
+    # Process each line
+    for line in lines:
+        # Ignore comments and empty lines
+        if not line.strip() or line.strip().startswith('#'):
+            continue
+
+        # Split the line into key and value
+        key, value = line.strip().split('=', 1)
+
+        # Add the key-value pair to environment variables
+        # Note: This won't affect the actual environment variables of your system
+        # It will only make the variables available in your Python script
+        exec(f'{key} = {value}')
+
     # DB info
-    psw = ''
-    user = 'root'
-    host = 'localhost'
-    db = 'foodball_statistics_app_db'
+    psw =  PSW
+    user = USER
+    host = HOST
+    db = DB
+    
+    print(psw, user,host,db)
+    
     app = scraper(user, psw, host, db)
     
-    # app.clear_tables(table_names)
-    # app.clear_tables(["matches"])
+    # 
+    # 
     
     # XLSX League Files path
     league_path = os.path.join(os.getcwd(), "Leagues")
@@ -149,6 +172,7 @@ if __name__ == "__main__" :
 
             
         if args.tbl :
+            app.clear_tables(table_names)
             for file in liga_files :
                 filename = os.path.basename(file)
                 try :
@@ -162,6 +186,7 @@ if __name__ == "__main__" :
                 app.insert_league_half_table(file, league_id)
 
         if args.mtch :
+            app.clear_tables(["matches"])
             for file in liga_files :
                 filename = os.path.basename(file)
                 try :
