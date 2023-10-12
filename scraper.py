@@ -610,6 +610,7 @@ class scraper(mysqldb) :
                                     try :
                                         self.set_query(cmd)
                                         counter+=1
+                                        print(home_name, away_name)
                                     except Exception as e :
                                         print(e, cmd)
                                 elif row[1] == "ROUND" :
@@ -625,7 +626,11 @@ class scraper(mysqldb) :
                             break
                         else :
                             try:
-                                away_name = row[1]                
+                                away_name = row[1]
+                                
+                                if home_name == "" :
+                                    break               
+                                  
                                 home_id = self.get_club_id(home_name)
                                 away_id = self.get_club_id(away_name)
                                 
@@ -669,8 +674,10 @@ class scraper(mysqldb) :
                                 values = f'{league_id}, "{season_id}", "{round}", "{home_name}", "{away_name}", "{home_id}", "{away_id}", "{ht_score}", "{f_score}", "{ht1_home_goals}", "{ht1_away_goals}", "{ht2_home_goals}", "{ht2_away_goals}", "{ht1_home_corners}", "{ht1_away_corners}", "{ht2_home_corners}", "{ht2_away_corners}", "{ht1_home_cards_red}", "{ht1_away_cards_red}", "{ht2_home_cards_red}", "{ht2_away_cards_red}", "{ht1_home_cards_yellow}", "{ht1_away_cards_yellow}", "{ht2_home_cards_yellow}", "{ht2_away_cards_yellow}", "{datetime_game}",{status}, NOW(), NOW()'
                                 q = f'INSERT INTO {MATCHES_TABLE} (league_id, season_id, round, home_name, away_name, home_id, away_id, ht_score, ft_score, ht1_home_goals, ht1_away_goals, ht2_home_goals, ht2_away_goals, ht1_home_corners, ht1_away_corners, ht2_home_corners, ht2_away_corners, ht1_home_cards_red, ht1_away_cards_red, ht2_home_cards_red, ht2_away_cards_red, ht1_home_cards_yellow, ht1_away_cards_yellow, ht2_home_cards_yellow, ht2_away_cards_yellow, datetime_game, status, created_at, updated_at) VALUES ({values})'
                                 self.set_query(q)
+                                print(home_name, away_name)
                             except Exception as e :
                                 print(e, q)
+                                continue
                 goals_rows +=14
             lb_corners+=9
             ub_corners+=9
